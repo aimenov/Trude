@@ -1,0 +1,5 @@
+tags:
+  integration:
+    description: >-
+      Talks to a locally running Trude server (npx tsx packages/server/src/index.ts).
+      Auto-skips itself when http://127.0.0.1:2567/health is unreachable.

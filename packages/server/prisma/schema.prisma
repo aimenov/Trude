@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String            @id @default(uuid())
+  nickname     String
+  avatar       String            @default("a0")
+  deviceId     String?           @unique
+  createdAt    DateTime          @default(now())
+  identities   Identity[]
+  stats        PlayerStats?
+  achievements UserAchievement[]
+}
+
+model Identity {
+  id             String @id @default(uuid())
+  userId         String
+  provider       String // "google" | "apple"
+  providerUserId String
+  user           User   @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerUserId])
+}
+
+model PlayerStats {
+  userId         String @id
+  gamesPlayed    Int    @default(0)
+  gamesWon       Int    @default(0)
+  gamesLost      Int    @default(0)
+  winStreak      Int    @default(0)
+  bestWinStreak  Int    @default(0)
+  liesSurvived   Int    @default(0)
+  liesCaught     Int    @default(0)
+  checksWon      Int    @default(0)
+  checksLost     Int    @default(0)
+  cardsPickedUp  Int    @default(0)
+  quadsDiscarded Int    @default(0)
+  jokerPassed    Int    @default(0)
+  jokerSmuggles  Int    @default(0)
+  truthfulThrows Int    @default(0)
+  lyingThrows    Int    @default(0)
+  user           User   @relation(fields: [userId], references: [id])
+}
+
+model UserAchievement {
+  userId     String
+  key        String
+  unlockedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@id([userId, key])
+}
+
+model GameResult {
+  id           String   @id @default(uuid())
+  roomId       String
+  deckSize     Int
+  status       String // FINISHED | ABANDONED
+  loserUserId  String?
+  participants Json // [{userId, placement}]
+  endedAt      DateTime @default(now())
+}

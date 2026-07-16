@@ -1,0 +1,4 @@
+{$TRUDE_DOMAIN} {
+	encode gzip
+	reverse_proxy server:2567
+}

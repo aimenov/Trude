@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace @trude/engine
+      - run: npx tsc -p packages/server/tsconfig.json --noEmit
+      - run: npx vitest run
+        working-directory: packages/engine
+      - run: npx vitest run
+        working-directory: packages/server
+
+  nightly-fuzz:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run test/fuzz.test.ts
+        working-directory: packages/engine
+        env:
+          FUZZ_GAMES: "200"
+
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: flutter pub get
+        working-directory: app
+      - run: flutter analyze
+        working-directory: app
+      # Integration tests auto-skip without the server; start it so they run.
+      - run: |
+          npx tsx packages/server/src/index.ts &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:2567/health && break; sleep 1; done
+      - run: flutter test
+        working-directory: app
+      - run: flutter build web
+        working-directory: app

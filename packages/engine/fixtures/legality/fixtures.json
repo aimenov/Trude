@@ -1,0 +1,4629 @@
+[
+  {
+    "name": "golden-a-step0",
+    "view": {
+      "actionCount": 0,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 18,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 15,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [
+        "A"
+      ],
+      "discarded": [
+        {
+          "id": "c16",
+          "rank": "A",
+          "suit": "H"
+        },
+        {
+          "id": "c22",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c24",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c36",
+          "rank": "A",
+          "suit": "C"
+        }
+      ],
+      "turn": {
+        "seat": 1,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c2",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c6",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c8",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c10",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c12",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c14",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c18",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c20",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c26",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c28",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c30",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c32",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c34",
+          "rank": "8",
+          "suit": "H"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-a-step17",
+    "view": {
+      "actionCount": 17,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 3,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 6,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [
+        "A",
+        "J",
+        "7",
+        "Q",
+        "9",
+        "10",
+        "K"
+      ],
+      "discarded": [
+        {
+          "id": "c16",
+          "rank": "A",
+          "suit": "H"
+        },
+        {
+          "id": "c22",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c24",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c36",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c7",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c31",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c25",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c2",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c11",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c27",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c23",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c6",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "H"
+        },
+        {
+          "id": "c15",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c12",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c21",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c1",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c20",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c26",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c13",
+          "rank": "9",
+          "suit": "H"
+        },
+        {
+          "id": "c33",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c8",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c14",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c18",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c3",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c19",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "K",
+          "suit": "C"
+        }
+      ],
+      "turn": {
+        "seat": 0,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c9",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c28",
+          "rank": "8",
+          "suit": "D"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "6",
+        "8"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-a-step23",
+    "view": {
+      "actionCount": 23,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 0,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 4,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "8",
+        "totalCount": 1,
+        "groups": [
+          {
+            "seat": 0,
+            "count": 1
+          }
+        ]
+      },
+      "lastThrowSeat": 0,
+      "mustCheck": true,
+      "retiredRanks": [
+        "A",
+        "J",
+        "7",
+        "Q",
+        "9",
+        "10",
+        "K",
+        "6"
+      ],
+      "discarded": [
+        {
+          "id": "c16",
+          "rank": "A",
+          "suit": "H"
+        },
+        {
+          "id": "c22",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c24",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c36",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c7",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c31",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c25",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c2",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c11",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c27",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c23",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c6",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "H"
+        },
+        {
+          "id": "c15",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c12",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c21",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c1",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c20",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c26",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c13",
+          "rank": "9",
+          "suit": "H"
+        },
+        {
+          "id": "c33",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c8",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c14",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c18",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c3",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c19",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c30",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c17",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c10",
+          "rank": "6",
+          "suit": "S"
+        }
+      ],
+      "turn": {
+        "seat": 1,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c32",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c35",
+          "rank": "JOKER"
+        },
+        {
+          "id": "c34",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c9",
+          "rank": "8",
+          "suit": "C"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": true,
+      "canTrust": false,
+      "nameableRanks": [
+        "8"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 1
+    }
+  },
+  {
+    "name": "golden-b-step0",
+    "view": {
+      "actionCount": 0,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 10,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 3,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c4",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c8",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c12",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c16",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c20",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c24",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c28",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c32",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c36",
+          "rank": "6",
+          "suit": "D"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-b-step15",
+    "view": {
+      "actionCount": 15,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 0,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 16,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 13,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 5,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "Q",
+        "totalCount": 3,
+        "groups": [
+          {
+            "seat": 0,
+            "count": 3
+          }
+        ]
+      },
+      "lastThrowSeat": 0,
+      "mustCheck": true,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 1,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c2",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c6",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c18",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c22",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c30",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c32",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c28",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c17",
+          "rank": "A",
+          "suit": "H"
+        },
+        {
+          "id": "c13",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c14",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c26",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c1",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c33",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c9",
+          "rank": "Q",
+          "suit": "H"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": true,
+      "canTrust": false,
+      "nameableRanks": [
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 3
+    }
+  },
+  {
+    "name": "golden-b-step17",
+    "view": {
+      "actionCount": 17,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 3,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 14,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 13,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 5,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "Q",
+        "totalCount": 2,
+        "groups": [
+          {
+            "seat": 1,
+            "count": 2
+          }
+        ]
+      },
+      "lastThrowSeat": 1,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 2,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c3",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c11",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c27",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c31",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c12",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c24",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c34",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c35",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c15",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c23",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c7",
+          "rank": "JOKER"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 2
+    }
+  },
+  {
+    "name": "golden-b-step34",
+    "view": {
+      "actionCount": 34,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 1,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 15,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 17,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 1,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "8",
+        "totalCount": 3,
+        "groups": [
+          {
+            "seat": 0,
+            "count": 3
+          }
+        ]
+      },
+      "lastThrowSeat": 0,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 1,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c2",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c6",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c18",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c22",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c30",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c32",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c17",
+          "rank": "A",
+          "suit": "H"
+        },
+        {
+          "id": "c26",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c1",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c9",
+          "rank": "Q",
+          "suit": "H"
+        },
+        {
+          "id": "c4",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c5",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c33",
+          "rank": "6",
+          "suit": "S"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 3
+    }
+  },
+  {
+    "name": "golden-b-step51",
+    "view": {
+      "actionCount": 51,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 1,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 12,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 23,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 1,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 2,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c3",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c11",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c27",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c24",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c35",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c23",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c7",
+          "rank": "JOKER"
+        },
+        {
+          "id": "c14",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c31",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c15",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c21",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c13",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c29",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c25",
+          "rank": "9",
+          "suit": "H"
+        },
+        {
+          "id": "c20",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c16",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c4",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c6",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c28",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c12",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c34",
+          "rank": "J",
+          "suit": "D"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-b-step68",
+    "view": {
+      "actionCount": 68,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 5,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 6,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 20,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 0,
+          "out": true
+        }
+      ],
+      "pile": {
+        "rank": "10",
+        "totalCount": 6,
+        "groups": [
+          {
+            "seat": 1,
+            "count": 3
+          },
+          {
+            "seat": 2,
+            "count": 2
+          },
+          {
+            "seat": 0,
+            "count": 1
+          }
+        ]
+      },
+      "lastThrowSeat": 0,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 1,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c2",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c18",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c32",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c1",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c5",
+          "rank": "A",
+          "suit": "D"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 1
+    }
+  },
+  {
+    "name": "golden-b-step85",
+    "view": {
+      "actionCount": 85,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 3,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 0,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 13,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 0,
+          "out": true
+        }
+      ],
+      "pile": {
+        "rank": "10",
+        "totalCount": 1,
+        "groups": [
+          {
+            "seat": 1,
+            "count": 1
+          }
+        ]
+      },
+      "lastThrowSeat": 1,
+      "mustCheck": true,
+      "retiredRanks": [
+        "8",
+        "9",
+        "K",
+        "7",
+        "J"
+      ],
+      "discarded": [
+        {
+          "id": "c23",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c28",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c8",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c1",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c25",
+          "rank": "9",
+          "suit": "H"
+        },
+        {
+          "id": "c6",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c18",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c24",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c13",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c29",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c2",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c14",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c26",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c27",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c20",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c15",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c30",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c34",
+          "rank": "J",
+          "suit": "D"
+        }
+      ],
+      "turn": {
+        "seat": 2,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c3",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c11",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c35",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c7",
+          "rank": "JOKER"
+        },
+        {
+          "id": "c31",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c21",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c4",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c32",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c12",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c33",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c10",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c5",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c16",
+          "rank": "6",
+          "suit": "C"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": true,
+      "canTrust": false,
+      "nameableRanks": [
+        "6",
+        "10",
+        "Q",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 1
+    }
+  },
+  {
+    "name": "golden-b-step102",
+    "view": {
+      "actionCount": 102,
+      "deckSize": 37,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 6,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 4,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 7,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 0,
+          "out": true
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [
+        "8",
+        "9",
+        "K",
+        "7",
+        "J"
+      ],
+      "discarded": [
+        {
+          "id": "c23",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c28",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c8",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c1",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c25",
+          "rank": "9",
+          "suit": "H"
+        },
+        {
+          "id": "c6",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c18",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c24",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c13",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c29",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c2",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c14",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c26",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c27",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c20",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c15",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c30",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c34",
+          "rank": "J",
+          "suit": "D"
+        }
+      ],
+      "turn": {
+        "seat": 0,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c17",
+          "rank": "A",
+          "suit": "H"
+        },
+        {
+          "id": "c22",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c36",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c32",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c5",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c35",
+          "rank": "Q",
+          "suit": "D"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "6",
+        "10",
+        "Q",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-c-step0",
+    "view": {
+      "actionCount": 0,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 17,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 18,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 18,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 1,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c0",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c3",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c6",
+          "rank": "5",
+          "suit": "C"
+        },
+        {
+          "id": "c9",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c12",
+          "rank": "5",
+          "suit": "S"
+        },
+        {
+          "id": "c15",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c18",
+          "rank": "2",
+          "suit": "H"
+        },
+        {
+          "id": "c21",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c24",
+          "rank": "JOKER"
+        },
+        {
+          "id": "c27",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c30",
+          "rank": "4",
+          "suit": "C"
+        },
+        {
+          "id": "c33",
+          "rank": "2",
+          "suit": "S"
+        },
+        {
+          "id": "c36",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c39",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c42",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c45",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c48",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c51",
+          "rank": "Q",
+          "suit": "S"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-c-step17",
+    "view": {
+      "actionCount": 17,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 18,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 12,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 11,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "2",
+        "totalCount": 8,
+        "groups": [
+          {
+            "seat": 2,
+            "count": 1
+          },
+          {
+            "seat": 0,
+            "count": 3
+          },
+          {
+            "seat": 1,
+            "count": 1
+          },
+          {
+            "seat": 2,
+            "count": 3
+          }
+        ]
+      },
+      "lastThrowSeat": 2,
+      "mustCheck": false,
+      "retiredRanks": [
+        "3"
+      ],
+      "discarded": [
+        {
+          "id": "c14",
+          "rank": "3",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "3",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "3",
+          "suit": "D"
+        },
+        {
+          "id": "c47",
+          "rank": "3",
+          "suit": "H"
+        }
+      ],
+      "turn": {
+        "seat": 0,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c2",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c8",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c11",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c26",
+          "rank": "4",
+          "suit": "S"
+        },
+        {
+          "id": "c32",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c35",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c44",
+          "rank": "9",
+          "suit": "H"
+        },
+        {
+          "id": "c41",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c20",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c24",
+          "rank": "JOKER"
+        },
+        {
+          "id": "c49",
+          "rank": "2",
+          "suit": "C"
+        },
+        {
+          "id": "c23",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c21",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c36",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c34",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c50",
+          "rank": "4",
+          "suit": "D"
+        },
+        {
+          "id": "c17",
+          "rank": "Q",
+          "suit": "H"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 3
+    }
+  },
+  {
+    "name": "golden-c-step34",
+    "view": {
+      "actionCount": 34,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 25,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 4,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 9,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "4",
+        "totalCount": 3,
+        "groups": [
+          {
+            "seat": 1,
+            "count": 3
+          }
+        ]
+      },
+      "lastThrowSeat": 1,
+      "mustCheck": false,
+      "retiredRanks": [
+        "3",
+        "6",
+        "K"
+      ],
+      "discarded": [
+        {
+          "id": "c14",
+          "rank": "3",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "3",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "3",
+          "suit": "D"
+        },
+        {
+          "id": "c47",
+          "rank": "3",
+          "suit": "H"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c7",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c31",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c38",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c23",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c35",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c45",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c46",
+          "rank": "K",
+          "suit": "D"
+        }
+      ],
+      "turn": {
+        "seat": 2,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c28",
+          "rank": "A",
+          "suit": "H"
+        },
+        {
+          "id": "c37",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c40",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c43",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c25",
+          "rank": "2",
+          "suit": "D"
+        },
+        {
+          "id": "c51",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c22",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c13",
+          "rank": "5",
+          "suit": "D"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "4",
+        "5",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 3
+    }
+  },
+  {
+    "name": "golden-c-step51",
+    "view": {
+      "actionCount": 51,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 25,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 12,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 1,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "10",
+        "totalCount": 3,
+        "groups": [
+          {
+            "seat": 2,
+            "count": 3
+          }
+        ]
+      },
+      "lastThrowSeat": 2,
+      "mustCheck": false,
+      "retiredRanks": [
+        "3",
+        "6",
+        "K"
+      ],
+      "discarded": [
+        {
+          "id": "c14",
+          "rank": "3",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "3",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "3",
+          "suit": "D"
+        },
+        {
+          "id": "c47",
+          "rank": "3",
+          "suit": "H"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c7",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c31",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c38",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c23",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c35",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c45",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c46",
+          "rank": "K",
+          "suit": "D"
+        }
+      ],
+      "turn": {
+        "seat": 0,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c2",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c11",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c26",
+          "rank": "4",
+          "suit": "S"
+        },
+        {
+          "id": "c32",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c41",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c20",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c24",
+          "rank": "JOKER"
+        },
+        {
+          "id": "c49",
+          "rank": "2",
+          "suit": "C"
+        },
+        {
+          "id": "c34",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c8",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c17",
+          "rank": "Q",
+          "suit": "H"
+        },
+        {
+          "id": "c42",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c39",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c16",
+          "rank": "4",
+          "suit": "H"
+        },
+        {
+          "id": "c52",
+          "rank": "5",
+          "suit": "H"
+        },
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c1",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c27",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c50",
+          "rank": "4",
+          "suit": "D"
+        },
+        {
+          "id": "c36",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c15",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c6",
+          "rank": "5",
+          "suit": "C"
+        },
+        {
+          "id": "c37",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c21",
+          "rank": "7",
+          "suit": "C"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "4",
+        "5",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 3
+    }
+  },
+  {
+    "name": "golden-c-step62",
+    "view": {
+      "actionCount": 62,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 21,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 14,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 0,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "5",
+        "totalCount": 2,
+        "groups": [
+          {
+            "seat": 1,
+            "count": 1
+          },
+          {
+            "seat": 2,
+            "count": 1
+          }
+        ]
+      },
+      "lastThrowSeat": 2,
+      "mustCheck": true,
+      "retiredRanks": [
+        "3",
+        "6",
+        "K",
+        "Q"
+      ],
+      "discarded": [
+        {
+          "id": "c14",
+          "rank": "3",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "3",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "3",
+          "suit": "D"
+        },
+        {
+          "id": "c47",
+          "rank": "3",
+          "suit": "H"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c7",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c31",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c38",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c23",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c35",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c45",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c46",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c37",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c51",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c17",
+          "rank": "Q",
+          "suit": "H"
+        }
+      ],
+      "turn": {
+        "seat": 0,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c11",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c26",
+          "rank": "4",
+          "suit": "S"
+        },
+        {
+          "id": "c32",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c41",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c20",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c24",
+          "rank": "JOKER"
+        },
+        {
+          "id": "c49",
+          "rank": "2",
+          "suit": "C"
+        },
+        {
+          "id": "c8",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c42",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c16",
+          "rank": "4",
+          "suit": "H"
+        },
+        {
+          "id": "c52",
+          "rank": "5",
+          "suit": "H"
+        },
+        {
+          "id": "c1",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c27",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c50",
+          "rank": "4",
+          "suit": "D"
+        },
+        {
+          "id": "c36",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c15",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c6",
+          "rank": "5",
+          "suit": "C"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c22",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c40",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c34",
+          "rank": "10",
+          "suit": "C"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": true,
+      "canTrust": false,
+      "nameableRanks": [
+        "2",
+        "4",
+        "5",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 1
+    }
+  },
+  {
+    "name": "golden-c-step68",
+    "view": {
+      "actionCount": 68,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 18,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 12,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 5,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "2",
+        "totalCount": 2,
+        "groups": [
+          {
+            "seat": 0,
+            "count": 2
+          }
+        ]
+      },
+      "lastThrowSeat": 0,
+      "mustCheck": false,
+      "retiredRanks": [
+        "3",
+        "6",
+        "K",
+        "Q"
+      ],
+      "discarded": [
+        {
+          "id": "c14",
+          "rank": "3",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "3",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "3",
+          "suit": "D"
+        },
+        {
+          "id": "c47",
+          "rank": "3",
+          "suit": "H"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c7",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c31",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c38",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c23",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c35",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c45",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c46",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c37",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c51",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c17",
+          "rank": "Q",
+          "suit": "H"
+        }
+      ],
+      "turn": {
+        "seat": 1,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c18",
+          "rank": "2",
+          "suit": "H"
+        },
+        {
+          "id": "c30",
+          "rank": "4",
+          "suit": "C"
+        },
+        {
+          "id": "c48",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c25",
+          "rank": "2",
+          "suit": "D"
+        },
+        {
+          "id": "c13",
+          "rank": "5",
+          "suit": "D"
+        },
+        {
+          "id": "c0",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c3",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c12",
+          "rank": "5",
+          "suit": "S"
+        },
+        {
+          "id": "c9",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c21",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c2",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c33",
+          "rank": "2",
+          "suit": "S"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "4",
+        "5",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 2
+    }
+  },
+  {
+    "name": "golden-c-step85",
+    "view": {
+      "actionCount": 85,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 8,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 15,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "10",
+        "totalCount": 5,
+        "groups": [
+          {
+            "seat": 0,
+            "count": 2
+          },
+          {
+            "seat": 1,
+            "count": 3
+          }
+        ]
+      },
+      "lastThrowSeat": 1,
+      "mustCheck": false,
+      "retiredRanks": [
+        "3",
+        "6",
+        "K",
+        "Q"
+      ],
+      "discarded": [
+        {
+          "id": "c14",
+          "rank": "3",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "3",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "3",
+          "suit": "D"
+        },
+        {
+          "id": "c47",
+          "rank": "3",
+          "suit": "H"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c7",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c31",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c38",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c23",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c35",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c45",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c46",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c37",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c51",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c17",
+          "rank": "Q",
+          "suit": "H"
+        }
+      ],
+      "turn": {
+        "seat": 2,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c28",
+          "rank": "A",
+          "suit": "H"
+        },
+        {
+          "id": "c40",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c34",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c13",
+          "rank": "5",
+          "suit": "D"
+        },
+        {
+          "id": "c2",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c43",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c18",
+          "rank": "2",
+          "suit": "H"
+        },
+        {
+          "id": "c52",
+          "rank": "5",
+          "suit": "H"
+        },
+        {
+          "id": "c50",
+          "rank": "4",
+          "suit": "D"
+        },
+        {
+          "id": "c8",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c16",
+          "rank": "4",
+          "suit": "H"
+        },
+        {
+          "id": "c9",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c44",
+          "rank": "9",
+          "suit": "H"
+        },
+        {
+          "id": "c39",
+          "rank": "A",
+          "suit": "C"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "4",
+        "5",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 3
+    }
+  },
+  {
+    "name": "golden-c-step102",
+    "view": {
+      "actionCount": 102,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 13,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 6,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 11,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "5",
+        "totalCount": 3,
+        "groups": [
+          {
+            "seat": 2,
+            "count": 1
+          },
+          {
+            "seat": 0,
+            "count": 2
+          }
+        ]
+      },
+      "lastThrowSeat": 0,
+      "mustCheck": false,
+      "retiredRanks": [
+        "3",
+        "6",
+        "K",
+        "Q",
+        "J"
+      ],
+      "discarded": [
+        {
+          "id": "c14",
+          "rank": "3",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "3",
+          "suit": "C"
+        },
+        {
+          "id": "c10",
+          "rank": "3",
+          "suit": "D"
+        },
+        {
+          "id": "c47",
+          "rank": "3",
+          "suit": "H"
+        },
+        {
+          "id": "c4",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c7",
+          "rank": "6",
+          "suit": "H"
+        },
+        {
+          "id": "c31",
+          "rank": "6",
+          "suit": "S"
+        },
+        {
+          "id": "c38",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c23",
+          "rank": "K",
+          "suit": "H"
+        },
+        {
+          "id": "c35",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c45",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c46",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "D"
+        },
+        {
+          "id": "c37",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c51",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c17",
+          "rank": "Q",
+          "suit": "H"
+        },
+        {
+          "id": "c40",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c19",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c2",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c3",
+          "rank": "J",
+          "suit": "S"
+        }
+      ],
+      "turn": {
+        "seat": 1,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c48",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c21",
+          "rank": "7",
+          "suit": "C"
+        },
+        {
+          "id": "c30",
+          "rank": "4",
+          "suit": "C"
+        },
+        {
+          "id": "c1",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c33",
+          "rank": "2",
+          "suit": "S"
+        },
+        {
+          "id": "c25",
+          "rank": "2",
+          "suit": "D"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "4",
+        "5",
+        "7",
+        "8",
+        "9",
+        "10",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 2
+    }
+  },
+  {
+    "name": "golden-d-step0",
+    "view": {
+      "actionCount": 0,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p4",
+          "seat": 4,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p5",
+          "seat": 5,
+          "cardCount": 8,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 0,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c6",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c12",
+          "rank": "4",
+          "suit": "C"
+        },
+        {
+          "id": "c18",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c24",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c30",
+          "rank": "2",
+          "suit": "S"
+        },
+        {
+          "id": "c36",
+          "rank": "2",
+          "suit": "C"
+        },
+        {
+          "id": "c42",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c48",
+          "rank": "9",
+          "suit": "H"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-d-step17",
+    "view": {
+      "actionCount": 17,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 3,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 10,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 15,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 8,
+          "out": false
+        },
+        {
+          "playerId": "p4",
+          "seat": 4,
+          "cardCount": 7,
+          "out": false
+        },
+        {
+          "playerId": "p5",
+          "seat": 5,
+          "cardCount": 6,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "A",
+        "totalCount": 4,
+        "groups": [
+          {
+            "seat": 3,
+            "count": 1
+          },
+          {
+            "seat": 4,
+            "count": 2
+          },
+          {
+            "seat": 5,
+            "count": 1
+          }
+        ]
+      },
+      "lastThrowSeat": 5,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 0,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c18",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c36",
+          "rank": "2",
+          "suit": "C"
+        },
+        {
+          "id": "c48",
+          "rank": "9",
+          "suit": "H"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 1
+    }
+  },
+  {
+    "name": "golden-d-step28",
+    "view": {
+      "actionCount": 28,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 0,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 11,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 13,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 10,
+          "out": false
+        },
+        {
+          "playerId": "p4",
+          "seat": 4,
+          "cardCount": 7,
+          "out": false
+        },
+        {
+          "playerId": "p5",
+          "seat": 5,
+          "cardCount": 9,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "9",
+        "totalCount": 3,
+        "groups": [
+          {
+            "seat": 5,
+            "count": 1
+          },
+          {
+            "seat": 0,
+            "count": 2
+          }
+        ]
+      },
+      "lastThrowSeat": 0,
+      "mustCheck": true,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 1,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c31",
+          "rank": "10",
+          "suit": "H"
+        },
+        {
+          "id": "c43",
+          "rank": "A",
+          "suit": "S"
+        },
+        {
+          "id": "c47",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c42",
+          "rank": "6",
+          "suit": "D"
+        },
+        {
+          "id": "c0",
+          "rank": "K",
+          "suit": "D"
+        },
+        {
+          "id": "c19",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c25",
+          "rank": "J",
+          "suit": "C"
+        },
+        {
+          "id": "c37",
+          "rank": "K",
+          "suit": "C"
+        },
+        {
+          "id": "c18",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c49",
+          "rank": "7",
+          "suit": "H"
+        },
+        {
+          "id": "c24",
+          "rank": "8",
+          "suit": "C"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": true,
+      "canTrust": false,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 2
+    }
+  },
+  {
+    "name": "golden-d-step34",
+    "view": {
+      "actionCount": 34,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 3,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 10,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 12,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p4",
+          "seat": 4,
+          "cardCount": 10,
+          "out": false
+        },
+        {
+          "playerId": "p5",
+          "seat": 5,
+          "cardCount": 9,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 5,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c5",
+          "rank": "Q",
+          "suit": "H"
+        },
+        {
+          "id": "c11",
+          "rank": "A",
+          "suit": "D"
+        },
+        {
+          "id": "c17",
+          "rank": "Q",
+          "suit": "C"
+        },
+        {
+          "id": "c23",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c29",
+          "rank": "5",
+          "suit": "C"
+        },
+        {
+          "id": "c35",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c27",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c10",
+          "rank": "10",
+          "suit": "C"
+        },
+        {
+          "id": "c41",
+          "rank": "JOKER"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-d-step51",
+    "view": {
+      "actionCount": 51,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 2,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 10,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 10,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 7,
+          "out": false
+        },
+        {
+          "playerId": "p4",
+          "seat": 4,
+          "cardCount": 10,
+          "out": false
+        },
+        {
+          "playerId": "p5",
+          "seat": 5,
+          "cardCount": 8,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "Q",
+        "totalCount": 6,
+        "groups": [
+          {
+            "seat": 1,
+            "count": 2
+          },
+          {
+            "seat": 2,
+            "count": 2
+          },
+          {
+            "seat": 3,
+            "count": 2
+          }
+        ]
+      },
+      "lastThrowSeat": 3,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 4,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c40",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c52",
+          "rank": "A",
+          "suit": "C"
+        },
+        {
+          "id": "c16",
+          "rank": "5",
+          "suit": "D"
+        },
+        {
+          "id": "c46",
+          "rank": "4",
+          "suit": "S"
+        },
+        {
+          "id": "c24",
+          "rank": "8",
+          "suit": "C"
+        },
+        {
+          "id": "c14",
+          "rank": "3",
+          "suit": "C"
+        },
+        {
+          "id": "c8",
+          "rank": "5",
+          "suit": "S"
+        },
+        {
+          "id": "c4",
+          "rank": "9",
+          "suit": "D"
+        },
+        {
+          "id": "c28",
+          "rank": "4",
+          "suit": "H"
+        },
+        {
+          "id": "c22",
+          "rank": "Q",
+          "suit": "S"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 2
+    }
+  },
+  {
+    "name": "golden-d-step68",
+    "view": {
+      "actionCount": 68,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 1,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 7,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 13,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 9,
+          "out": false
+        },
+        {
+          "playerId": "p4",
+          "seat": 4,
+          "cardCount": 8,
+          "out": false
+        },
+        {
+          "playerId": "p5",
+          "seat": 5,
+          "cardCount": 15,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 3,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c15",
+          "rank": "K",
+          "suit": "S"
+        },
+        {
+          "id": "c33",
+          "rank": "2",
+          "suit": "D"
+        },
+        {
+          "id": "c45",
+          "rank": "9",
+          "suit": "S"
+        },
+        {
+          "id": "c39",
+          "rank": "6",
+          "suit": "C"
+        },
+        {
+          "id": "c51",
+          "rank": "3",
+          "suit": "S"
+        },
+        {
+          "id": "c3",
+          "rank": "3",
+          "suit": "H"
+        },
+        {
+          "id": "c6",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c50",
+          "rank": "9",
+          "suit": "C"
+        },
+        {
+          "id": "c9",
+          "rank": "A",
+          "suit": "H"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  },
+  {
+    "name": "golden-d-step85",
+    "view": {
+      "actionCount": 85,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 4,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 5,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 7,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 15,
+          "out": false
+        },
+        {
+          "playerId": "p4",
+          "seat": 4,
+          "cardCount": 6,
+          "out": false
+        },
+        {
+          "playerId": "p5",
+          "seat": 5,
+          "cardCount": 12,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": "A",
+        "totalCount": 4,
+        "groups": [
+          {
+            "seat": 0,
+            "count": 3
+          },
+          {
+            "seat": 1,
+            "count": 1
+          }
+        ]
+      },
+      "lastThrowSeat": 1,
+      "mustCheck": false,
+      "retiredRanks": [],
+      "discarded": [],
+      "turn": {
+        "seat": 2,
+        "phase": "respond"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c2",
+          "rank": "10",
+          "suit": "D"
+        },
+        {
+          "id": "c29",
+          "rank": "5",
+          "suit": "C"
+        },
+        {
+          "id": "c18",
+          "rank": "8",
+          "suit": "D"
+        },
+        {
+          "id": "c19",
+          "rank": "8",
+          "suit": "S"
+        },
+        {
+          "id": "c47",
+          "rank": "7",
+          "suit": "S"
+        },
+        {
+          "id": "c30",
+          "rank": "2",
+          "suit": "S"
+        },
+        {
+          "id": "c32",
+          "rank": "3",
+          "suit": "D"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "respond",
+      "mustCheck": false,
+      "canTrust": true,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 1
+    }
+  },
+  {
+    "name": "golden-d-step102",
+    "view": {
+      "actionCount": 102,
+      "deckSize": 53,
+      "players": [
+        {
+          "playerId": "p0",
+          "seat": 0,
+          "cardCount": 7,
+          "out": false
+        },
+        {
+          "playerId": "p1",
+          "seat": 1,
+          "cardCount": 6,
+          "out": false
+        },
+        {
+          "playerId": "p2",
+          "seat": 2,
+          "cardCount": 6,
+          "out": false
+        },
+        {
+          "playerId": "p3",
+          "seat": 3,
+          "cardCount": 17,
+          "out": false
+        },
+        {
+          "playerId": "p4",
+          "seat": 4,
+          "cardCount": 3,
+          "out": false
+        },
+        {
+          "playerId": "p5",
+          "seat": 5,
+          "cardCount": 10,
+          "out": false
+        }
+      ],
+      "pile": {
+        "rank": null,
+        "totalCount": 0,
+        "groups": []
+      },
+      "lastThrowSeat": null,
+      "mustCheck": false,
+      "retiredRanks": [
+        "J"
+      ],
+      "discarded": [
+        {
+          "id": "c21",
+          "rank": "J",
+          "suit": "S"
+        },
+        {
+          "id": "c6",
+          "rank": "J",
+          "suit": "D"
+        },
+        {
+          "id": "c40",
+          "rank": "J",
+          "suit": "H"
+        },
+        {
+          "id": "c25",
+          "rank": "J",
+          "suit": "C"
+        }
+      ],
+      "turn": {
+        "seat": 0,
+        "phase": "lead"
+      },
+      "loserSeat": null,
+      "hand": [
+        {
+          "id": "c22",
+          "rank": "Q",
+          "suit": "S"
+        },
+        {
+          "id": "c23",
+          "rank": "10",
+          "suit": "S"
+        },
+        {
+          "id": "c27",
+          "rank": "7",
+          "suit": "D"
+        },
+        {
+          "id": "c35",
+          "rank": "8",
+          "suit": "H"
+        },
+        {
+          "id": "c41",
+          "rank": "JOKER"
+        },
+        {
+          "id": "c8",
+          "rank": "5",
+          "suit": "S"
+        },
+        {
+          "id": "c9",
+          "rank": "A",
+          "suit": "H"
+        }
+      ]
+    },
+    "expected": {
+      "phase": "lead",
+      "mustCheck": false,
+      "canTrust": false,
+      "nameableRanks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "Q",
+        "K",
+        "A"
+      ],
+      "maxThrowCount": 3,
+      "lastThrowCount": 0
+    }
+  }
+]

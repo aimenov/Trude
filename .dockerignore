@@ -1,0 +1,8 @@
+node_modules
+**/node_modules
+**/dist
+app/build
+app/.dart_tool
+.git
+*.log
+deploy

@@ -1,0 +1,54 @@
+# Production deployment (Hetzner VPS or any Docker host).
+#   1. Copy this directory + the repo to the host (or build the image in CI).
+#   2. Create deploy/.env with JWT_SECRET=<long random string> and TRUDE_DOMAIN=<your domain>.
+#   3. docker compose up -d
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      TRUDE_DOMAIN: ${TRUDE_DOMAIN}
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: ..
+      dockerfile: packages/server/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "2567"
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://trude:${POSTGRES_PASSWORD}@postgres:5432/trude
+    expose:
+      - "2567"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: trude
+      POSTGRES_USER: trude
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+# One-time schema push after first boot (and after schema changes):
+#   docker compose run --rm --entrypoint npx server prisma db push --schema packages/server/prisma/schema.prisma
+# Nightly backup example (host cron):
+#   docker compose exec postgres pg_dump -U trude trude | gzip > backup-$(date +%F).sql.gz
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pg_data:
