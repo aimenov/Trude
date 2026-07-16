@@ -1,12 +1,17 @@
 // Flick-to-throw gesture regression locks for MyHandView.
 //
-// Locks the "throw from any card, in any natural direction" fix:
+// Locks the "throw from ANYWHERE on the strip, in any natural direction"
+// fix (one strip-level direction-gated recognizer):
+//  * with 3 cards selected, an upward fling starting on a selected card, an
+//    UNSELECTED card, or empty strip space each fires onFlickThrow once;
 //  * a DIAGONAL fling on an edge selected card throws and publishes a
 //    FlickLaunch that keeps the horizontal component;
 //  * a horizontal fling never throws;
-//  * tap-to-select still toggles (with and without an active selection);
-//  * an overflowing hand still scrolls its ListView from unselected cards,
-//    while a diagonal flick on a selected card still wins the arena.
+//  * tap-to-select still toggles (with and without an active selection,
+//    including a multi-card selection);
+//  * an overflowing hand still scrolls its ListView horizontally — even
+//    with a multi-card selection armed and the drag starting on a SELECTED
+//    card — while a diagonal flick on a selected card still wins the arena.
 //
 // FlickLaunch.peek is non-consuming (TTL expiry only), so the published
 // velocity is asserted directly through the production read path.
@@ -137,6 +142,115 @@ void main() {
     await tester.tap(_card(0));
     await tester.tap(_card(2));
     expect(toggles, [('c0', false), ('c2', true)]);
+  });
+
+  testWidgets('3 selected: upward fling starting on a SELECTED card throws once',
+      (tester) async {
+    _sizeSurface(tester);
+    var throws = 0;
+    await tester.pumpWidget(_harness(
+      cards: _cards(5),
+      selectedIds: const {'c0', 'c1', 'c2'},
+      onFlickThrow: () => throws++,
+    ));
+
+    await tester.fling(_card(1), const Offset(0, -160), 1500);
+    expect(throws, 1);
+    expect(FlickLaunch.peek(tester.getRect(find.byType(MyHandView))), isNotNull,
+        reason: 'a multi-card flick must publish its release velocity too');
+
+    await tester.pumpAndSettle();
+    expect(throws, 1);
+  });
+
+  testWidgets('3 selected: upward fling starting on an UNSELECTED card throws once',
+      (tester) async {
+    _sizeSurface(tester);
+    var throws = 0;
+    final toggles = <(String, bool)>[];
+    await tester.pumpWidget(_harness(
+      cards: _cards(5),
+      selectedIds: const {'c0', 'c1', 'c2'},
+      onToggle: (card, selected) => toggles.add((card.id, selected)),
+      onFlickThrow: () => throws++,
+    ));
+
+    // The natural multi-card swipe often begins on a card that stayed down
+    // in the fan — the historical dead zone.
+    await tester.fling(_card(4), const Offset(0, -160), 1500);
+    expect(throws, 1);
+    expect(toggles, isEmpty,
+        reason: 'a fling is not a tap: it must not toggle the card under it');
+
+    await tester.pumpAndSettle();
+    expect(throws, 1);
+  });
+
+  testWidgets('3 selected: upward fling from EMPTY strip space throws once',
+      (tester) async {
+    _sizeSurface(tester);
+    var throws = 0;
+    await tester.pumpWidget(_harness(
+      cards: _cards(5),
+      selectedIds: const {'c0', 'c1', 'c2'},
+      onFlickThrow: () => throws++,
+    ));
+
+    // 5 cards (~280 dp) centered in the 800 dp strip: the flanks are empty.
+    final handRect = tester.getRect(find.byType(MyHandView));
+    final emptySpot = Offset(handRect.left + 40, handRect.center.dy);
+    final cardsRect =
+        tester.getRect(_card(0)).expandToInclude(tester.getRect(_card(4)));
+    expect(cardsRect.contains(emptySpot), isFalse,
+        reason: 'the fling must start on truly empty strip space');
+
+    await tester.flingFrom(emptySpot, const Offset(0, -150), 1500);
+    expect(throws, 1);
+
+    await tester.pumpAndSettle();
+    expect(throws, 1);
+  });
+
+  testWidgets('taps still toggle with multiple cards selected',
+      (tester) async {
+    _sizeSurface(tester);
+    final toggles = <(String, bool)>[];
+    await tester.pumpWidget(_harness(
+      cards: _cards(5),
+      selectedIds: const {'c0', 'c1', 'c2'},
+      onToggle: (card, selected) => toggles.add((card.id, selected)),
+      onFlickThrow: () {},
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_card(1)); // selected -> deselect
+    await tester.tap(_card(3)); // unselected -> select
+    expect(toggles, [('c1', false), ('c3', true)]);
+  });
+
+  testWidgets(
+      '3 selected on an overflowing hand: horizontal drag from a SELECTED '
+      'card scrolls, never throws', (tester) async {
+    _sizeSurface(tester);
+    var throws = 0;
+    await tester.pumpWidget(_harness(
+      cards: _cards(20),
+      selectedIds: const {'c0', 'c1', 'c2'},
+      onFlickThrow: () => throws++,
+    ));
+    expect(find.byType(ListView), findsOneWidget);
+
+    final position =
+        tester.state<ScrollableState>(find.byType(Scrollable)).position;
+    expect(position.pixels, 0);
+
+    // The direction gate never claims a horizontal drag, so the ListView's
+    // recognizer wins the arena even when the drag starts on a selected
+    // card of an armed multi-selection.
+    await tester.drag(_card(1), const Offset(-200, 0));
+    await tester.pumpAndSettle();
+    expect(position.pixels, greaterThan(0));
+    expect(throws, 0);
   });
 
   testWidgets('overflowing hand still scrolls from an unselected card',

@@ -195,6 +195,12 @@ abstract final class MotionSpec {
   /// Minimum upward travel (dp) before a release may throw.
   static const flickMinDrag = 24.0;
 
+  /// Upward-dominance gate of the strip-level flick recognizer's ACCEPTANCE:
+  /// the pointer is claimed only while its cumulative movement has dy < 0
+  /// and |dy| >= this fraction of |dx|. Shallower (scroll-like) drags are
+  /// never accepted, leaving the arena to the hand ListView and card taps.
+  static const flickUpDominance = 0.6;
+
   /// Clamp of the handed-off flick launch speed (dp/s).
   static const flickLaunchSpeedMin = 900.0;
   static const flickLaunchSpeedMax = 2600.0;
