@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/audio/sfx_service.dart';
 import '../../core/motion/animation_speed.dart';
 import '../../core/net/connection_providers.dart';
 import '../../core/net/meta_providers.dart';
@@ -90,8 +91,11 @@ class SettingsScreen extends ConsumerWidget {
                             color: TrudeColors.brassBright),
                         title: Text(Strings.soundLabel, style: _rowTitle),
                         value: settings.soundOn,
-                        onChanged: (v) =>
-                            ref.read(settingsProvider.notifier).setSoundOn(v),
+                        onChanged: (v) {
+                          ref.read(settingsProvider.notifier).setSoundOn(v);
+                          // Audible confirmation that sound is back on.
+                          if (v) ref.read(sfxProvider).yourTurn();
+                        },
                       ),
                       SwitchListTile(
                         secondary: const Icon(Icons.vibration,

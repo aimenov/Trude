@@ -540,6 +540,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
               if (_selectedCardIds.length < maxCount) {
                 _selectedCardIds.add(card.id);
                 ref.read(hapticsProvider).selection();
+                ref.read(sfxProvider).uiTap();
               }
             } else {
               _selectedCardIds.remove(card.id);

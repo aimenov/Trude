@@ -11,7 +11,9 @@ library;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/audio/sfx_service.dart';
 import '../../core/theme/trude_theme.dart';
 import '../game/widgets/card_widgets.dart';
 
@@ -86,22 +88,28 @@ class ParlorPanel extends StatelessWidget {
 
 /// Scales down slightly while pressed and up a hair on hover — the standard
 /// "parlor door plaque" interaction. Purely decorative; hit behavior is a
-/// plain [GestureDetector].
-class PressableScale extends StatefulWidget {
+/// plain [GestureDetector]. A Consumer so the tap-down can click ([uiTap])
+/// via [sfxProvider] — every parlor button clicks for free.
+class PressableScale extends ConsumerStatefulWidget {
   const PressableScale({super.key, this.onTap, required this.child});
 
   final VoidCallback? onTap;
   final Widget child;
 
   @override
-  State<PressableScale> createState() => _PressableScaleState();
+  ConsumerState<PressableScale> createState() => _PressableScaleState();
 }
 
-class _PressableScaleState extends State<PressableScale> {
+class _PressableScaleState extends ConsumerState<PressableScale> {
   bool _pressed = false;
   bool _hovered = false;
 
   bool get _enabled => widget.onTap != null;
+
+  void _handleTapDown(TapDownDetails _) {
+    ref.read(sfxProvider).uiTap();
+    setState(() => _pressed = true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +127,7 @@ class _PressableScaleState extends State<PressableScale> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
-        onTapDown: _enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapDown: _enabled ? _handleTapDown : null,
         onTapUp: _enabled ? (_) => setState(() => _pressed = false) : null,
         onTapCancel: _enabled ? () => setState(() => _pressed = false) : null,
         child: AnimatedScale(
