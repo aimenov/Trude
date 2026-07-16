@@ -238,7 +238,14 @@ abstract final class Strings {
 
   /// Card-corner rank glyph: numerals pass through, courts localize
   /// (J Q K A / В Д К Т).
-  static String rankShort(String rank) => _l.rankShort(_rankKey(rank));
+  static String rankShort(String rank) {
+    final key = _rankKey(rank);
+    // Numeric ranks map to ICU keys like 'r7' which the ARB select falls
+    // through to `other{{rank}}` — that would render the raw key. Numerals
+    // are locale-independent, so pass them straight through.
+    if (key.startsWith('r')) return rank;
+    return _l.rankShort(key);
+  }
 
   /// "7" -> "SEVEN" / "СЕМЁРКА" (dropdowns, pile label).
   static String rankWord(String rank) => _l.rankWord(_rankKey(rank));

@@ -126,6 +126,9 @@ function attachBot(room: SdkRoom, nickname: string, userId: string, token: strin
           bot.lastThrowCount = e['count'] as number;
           break;
         case 'turnStarted':
+          if (typeof e['durationMs'] !== 'number' || (e['durationMs'] as number) <= 0) {
+            bot.errors.push(`turnStarted missing durationMs: ${JSON.stringify(e)}`);
+          }
           if (e['seat'] === bot.seat) {
             myTurn = { phase: e['phase'] as string, mustCheck: e['mustCheck'] === true };
           }

@@ -1,6 +1,7 @@
 /// Four-of-a-kind set piece: the four cards fly from the discarder's seat to
-/// center forming a face-up 2x2 square, a golden shine sweeps across under a
-/// "FOUR SEVENS OUT!" banner, then the square shrinks into the retired rail.
+/// center forming a face-up 2x2 square inside a brass frame, a golden shine
+/// sweeps across while brass glints twinkle around it under a "FOUR SEVENS
+/// OUT!" plaque, then the framed square shrinks into the retired rail.
 library;
 
 import 'dart:math';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart' hide Card;
 
 import '../../../core/net/protocol_models.dart';
 import '../../../core/strings.dart';
+import '../../../core/theme/trude_theme.dart';
 import '../widgets/card_widgets.dart';
 import 'motion_spec.dart';
 
@@ -99,6 +101,19 @@ class _QuadCelebrationState extends State<QuadCelebration>
             clipBehavior: Clip.none,
             fit: StackFit.expand,
             children: [
+              // Brass glints twinkling around the framed square.
+              if (shine > 0 && shine < 1 && shrink <= 0)
+                Positioned(
+                  left: squareCenter.dx,
+                  top: squareCenter.dy,
+                  child: FractionalTranslation(
+                    translation: const Offset(-0.5, -0.5),
+                    child: CustomPaint(
+                      size: const Size.square(240),
+                      painter: _GlintPainter(progress: shine),
+                    ),
+                  ),
+                ),
               Positioned(
                 left: squareCenter.dx,
                 top: squareCenter.dy,
@@ -106,7 +121,7 @@ class _QuadCelebrationState extends State<QuadCelebration>
                   translation: const Offset(-0.5, -0.5),
                   child: Transform.scale(
                     scale: max(0.05, squareScale),
-                    child: _goldenSquare(cardWidth, gap, shine),
+                    child: _framedSquare(cardWidth, gap, shine),
                   ),
                 ),
               ),
@@ -115,7 +130,7 @@ class _QuadCelebrationState extends State<QuadCelebration>
                   left: 0,
                   right: 0,
                   top: center.dy - cardWidth * kCardAspect - gap - 56,
-                  child: Center(child: _banner(shrink)),
+                  child: Center(child: _plaque(shrink)),
                 ),
             ],
           ),
@@ -124,7 +139,8 @@ class _QuadCelebrationState extends State<QuadCelebration>
     );
   }
 
-  Widget _goldenSquare(double cardWidth, double gap, double shine) {
+  /// The 2x2 golden square inside a double brass frame with a soft glow.
+  Widget _framedSquare(double cardWidth, double gap, double shine) {
     final cards = widget.event.cards;
     final square = Column(
       mainAxisSize: MainAxisSize.min,
@@ -145,7 +161,36 @@ class _QuadCelebrationState extends State<QuadCelebration>
           ),
       ],
     );
-    if (shine <= 0 || shine >= 1) return square;
+
+    final framed = Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: TrudeColors.brass, width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: TrudeColors.brassBright.withValues(alpha: 0.35),
+            blurRadius: 16,
+          ),
+          BoxShadow(
+            color: TrudeColors.midnight.withValues(alpha: 0.5),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+              color: TrudeColors.brassDark, width: TrudeDims.hairlineWidth),
+        ),
+        child: square,
+      ),
+    );
+
+    if (shine <= 0 || shine >= 1) return framed;
     // Golden gloss sweeping across the assembled square once.
     return ShaderMask(
       blendMode: BlendMode.srcATop,
@@ -154,13 +199,13 @@ class _QuadCelebrationState extends State<QuadCelebration>
         end: Alignment.bottomRight,
         colors: [
           Colors.transparent,
-          const Color(0xFFFFD54F).withValues(alpha: 0.75),
+          TrudeColors.brassBright.withValues(alpha: 0.75),
           Colors.transparent,
         ],
         stops: const [0.3, 0.5, 0.7],
         transform: _SweepTransform(shine),
       ).createShader(bounds),
-      child: square,
+      child: framed,
     );
   }
 
@@ -170,19 +215,18 @@ class _QuadCelebrationState extends State<QuadCelebration>
     return TrudeCardFace(rank: c.rank, suit: c.suit, width: width, golden: true);
   }
 
-  Widget _banner(double shrink) {
+  Widget _plaque(double shrink) {
     return Opacity(
       opacity: (1 - shrink * 2).clamp(0.0, 1.0),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFB300), Color(0xFFFFD54F), Color(0xFFFFB300)],
-          ),
-          borderRadius: BorderRadius.circular(20),
+          gradient: TrudeGradients.brass,
+          borderRadius: BorderRadius.circular(TrudeDims.chipRadius),
+          border: Border.all(color: TrudeColors.brassDark),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: TrudeColors.midnight.withValues(alpha: 0.55),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -190,11 +234,16 @@ class _QuadCelebrationState extends State<QuadCelebration>
         ),
         child: Text(
           Strings.quadBanner(widget.event.rank),
-          style: const TextStyle(
-            color: Color(0xFF4E342E),
-            fontWeight: FontWeight.w900,
-            fontSize: 18,
-            letterSpacing: 1,
+          style: TrudeType.stamp.copyWith(
+            color: TrudeColors.textOnBrass,
+            fontSize: 16,
+            letterSpacing: 1.6,
+            shadows: [
+              Shadow(
+                color: TrudeColors.brassBright.withValues(alpha: 0.55),
+                offset: const Offset(0, 0.8),
+              ),
+            ],
           ),
         ),
       ),
@@ -210,4 +259,50 @@ class _SweepTransform extends GradientTransform {
   @override
   Matrix4? transform(Rect bounds, {TextDirection? textDirection}) =>
       Matrix4.translationValues(bounds.width * (t * 2.4 - 1.2), 0, 0);
+}
+
+/// Brass glint particles: 4-point star sparkles twinkling in a loose ring
+/// around the framed square, each on its own seeded delay.
+class _GlintPainter extends CustomPainter {
+  _GlintPainter({required this.progress});
+
+  /// 0..1 through the shine phase.
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rng = Random(4444); // deterministic layout per set piece
+    final center = size.center(Offset.zero);
+
+    for (var i = 0; i < TableMotionSpec.quadGlintCount; i++) {
+      final angle = rng.nextDouble() * 2 * pi;
+      final dist = 46 + rng.nextDouble() * 68;
+      final pos = center + Offset(cos(angle), sin(angle)) * dist;
+      final glintSize = 2.5 + rng.nextDouble() * 4.5;
+      final delay = rng.nextDouble() * 0.55;
+
+      // Each glint rises and dies inside its own window of the shine phase.
+      final local = ((progress - delay) / 0.45).clamp(0.0, 1.0);
+      if (local <= 0 || local >= 1) continue;
+      final twinkle = sin(local * pi);
+
+      final color = Color.lerp(
+          TrudeColors.brass, TrudeColors.brassBright, rng.nextDouble())!;
+      final ray = Paint()
+        ..strokeWidth = 1.1
+        ..strokeCap = StrokeCap.round
+        ..color = color.withValues(alpha: 0.9 * twinkle);
+      final r = glintSize * twinkle;
+      canvas.drawLine(pos - Offset(r, 0), pos + Offset(r, 0), ray);
+      canvas.drawLine(pos - Offset(0, r), pos + Offset(0, r), ray);
+      canvas.drawCircle(
+          pos,
+          glintSize * 0.28 * twinkle,
+          Paint()
+            ..color = TrudeColors.brassBright.withValues(alpha: twinkle));
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GlintPainter old) => old.progress != progress;
 }

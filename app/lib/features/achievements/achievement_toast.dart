@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/net/connection_providers.dart';
 import '../../core/strings.dart';
+import '../../core/theme/trude_theme.dart';
 import '../game/anim/rendered_state.dart';
 import 'achievement_art.dart';
 
@@ -153,13 +154,14 @@ class _ToastCardState extends State<_ToastCard>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    // A sliding brass plaque: brushed gradient, engraved serif title, one
+    // shine sweep after it lands.
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Material(
         color: Colors.transparent,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(TrudeDims.chipRadius + 2),
           child: AnimatedBuilder(
             animation: _shine,
             builder: (context, child) => ShaderMask(
@@ -168,9 +170,9 @@ class _ToastCardState extends State<_ToastCard>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.transparent,
-                  Colors.white.withValues(alpha: 0.35),
-                  Colors.transparent,
+                  TrudeColors.ivory.withValues(alpha: 0),
+                  TrudeColors.ivory.withValues(alpha: 0.4),
+                  TrudeColors.ivory.withValues(alpha: 0),
                 ],
                 stops: const [0.35, 0.5, 0.65],
                 transform:
@@ -181,18 +183,17 @@ class _ToastCardState extends State<_ToastCard>
             child: Container(
               constraints: const BoxConstraints(maxWidth: 340),
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [scheme.primaryContainer, scheme.tertiaryContainer],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: scheme.primary.withValues(alpha: 0.4)),
+                gradient: TrudeGradients.brass,
+                borderRadius:
+                    BorderRadius.circular(TrudeDims.chipRadius + 2),
+                border:
+                    Border.all(color: TrudeColors.brassDark, width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 10,
+                    color: TrudeColors.midnight.withValues(alpha: 0.55),
+                    blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -200,8 +201,19 @@ class _ToastCardState extends State<_ToastCard>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(achievementEmoji(widget.toast.key),
-                      style: const TextStyle(fontSize: 30)),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: TrudeColors.ivory,
+                      border: Border.all(color: TrudeColors.brassDark),
+                    ),
+                    child: Center(
+                      child: Text(achievementEmoji(widget.toast.key),
+                          style: const TextStyle(fontSize: 21)),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Flexible(
                     child: Column(
@@ -209,25 +221,27 @@ class _ToastCardState extends State<_ToastCard>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          Strings.achievementUnlockedToast,
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(
-                                  color: scheme.onPrimaryContainer
-                                      .withValues(alpha: 0.7)),
+                          Strings.achievementUnlockedToast.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TrudeType.etched.copyWith(
+                            fontSize: 9,
+                            letterSpacing: 2,
+                            color: TrudeColors.textOnBrass
+                                .withValues(alpha: 0.75),
+                          ),
                         ),
+                        const SizedBox(height: 1),
                         Text(
                           Strings.achievementTitle(
                               widget.toast.key, widget.toast.title),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleSmall
-                              ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: scheme.onPrimaryContainer),
+                          style: TrudeType.display.copyWith(
+                            fontSize: 15,
+                            letterSpacing: 0.4,
+                            color: TrudeColors.textOnBrass,
+                          ),
                         ),
                       ],
                     ),

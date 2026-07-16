@@ -1,7 +1,8 @@
-/// An opponent's seat chip: avatar with idle bob, an animated rotating-
-/// gradient turn ring with breathing scale when it's their turn, a depleting
-/// countdown arc, a count chip that pulses on every change, and a shake
-/// driven by the reveal set piece when they're caught lying.
+/// An opponent's seat: a brass-ringed portrait on a sunken ground with idle
+/// bob, a rotating brass turn ring with a soft glow when it's their turn, a
+/// depleting countdown arc, an ivory card-stack count chip that pulses on
+/// every change, and a shake driven by the reveal set piece when they're
+/// caught lying.
 library;
 
 import 'dart:math';
@@ -11,6 +12,7 @@ import 'package:flutter/material.dart';
 import '../../../core/motion/animation_speed.dart';
 import '../../../core/net/client_game_state.dart';
 import '../../../core/strings.dart';
+import '../../../core/theme/trude_theme.dart';
 import '../anim/motion_jitter.dart';
 import '../anim/motion_spec.dart';
 import '../anim/table_anchors.dart';
@@ -130,12 +132,13 @@ class _SeatAvatarState extends State<SeatAvatar>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _avatarWithRings(theme),
+            _portraitWithRings(theme),
             const SizedBox(height: 2),
             Text(
               player.nickname,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: TrudeColors.textPrimary),
             ),
             _badgesRow(theme),
           ],
@@ -144,9 +147,9 @@ class _SeatAvatarState extends State<SeatAvatar>
     );
   }
 
-  Widget _avatarWithRings(ThemeData theme) {
+  Widget _portraitWithRings(ThemeData theme) {
     final scheme = theme.colorScheme;
-    const avatarSize = 40.0;
+    const portraitSize = 40.0;
     const ringSize = 52.0;
 
     return SizedBox(
@@ -160,10 +163,7 @@ class _SeatAvatarState extends State<SeatAvatar>
               animation: _ring,
               builder: (context, _) => CustomPaint(
                 size: const Size.square(ringSize),
-                painter: _TurnRingPainter(
-                  rotation: _ring.value * 2 * pi,
-                  color: scheme.primary,
-                ),
+                painter: _TurnRingPainter(rotation: _ring.value * 2 * pi),
               ),
             ),
           if (widget.isTurn && widget.turnTotal > Duration.zero)
@@ -177,13 +177,32 @@ class _SeatAvatarState extends State<SeatAvatar>
                       .clamp(0.0, 1.0),
                   color: countdownColor(widget.remaining, scheme),
                   trackColor: Colors.transparent,
-                  strokeWidth: 2.5,
+                  strokeWidth: 3.5,
                 ),
               ),
             ),
-          CircleAvatar(
-            radius: avatarSize / 2,
-            child: Text(_initial()),
+          // The brass-framed portrait itself.
+          CustomPaint(
+            size: const Size.square(portraitSize + 4),
+            painter: _PortraitFramePainter(),
+            child: Container(
+              width: portraitSize,
+              height: portraitSize,
+              margin: const EdgeInsets.all(2),
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: TrudeColors.surfaceSunken,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                _initial(),
+                style: TrudeType.display.copyWith(
+                  fontSize: 19,
+                  height: 1.0,
+                  color: TrudeColors.brassBright,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -208,53 +227,163 @@ class _SeatAvatarState extends State<SeatAvatar>
           curve: Curves.easeOutBack,
           builder: (context, scale, child) =>
               Transform.scale(scale: scale, child: child),
-          child: Chip(
-            label: Text('${player.cardCount}'),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-          ),
+          child: _countChip(player.cardCount),
         ),
         if (player.isOut)
           Padding(
-            padding: const EdgeInsets.only(left: 2),
-            child: Text(Strings.outBadge, style: const TextStyle(fontSize: 10)),
+            padding: const EdgeInsets.only(left: 3),
+            child: Text(
+              Strings.outBadge,
+              style: TrudeType.etched
+                  .copyWith(fontSize: 9, letterSpacing: 1.2, height: 1.2),
+            ),
           ),
         if (!player.connected)
-          const Icon(Icons.power_off, size: 14)
+          const Icon(Icons.power_off, size: 14, color: TrudeColors.textMuted)
         else if (player.autoPilot)
-          const Icon(Icons.smart_toy, size: 14),
+          const Icon(Icons.smart_toy, size: 14, color: TrudeColors.textMuted),
       ],
+    );
+  }
+
+  /// A tiny ivory card-stack pictogram beside the count.
+  Widget _countChip(int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: TrudeColors.surfaceSunken,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: TrudeColors.hairline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CustomPaint(
+            size: const Size(13, 13),
+            painter: _CardStackIconPainter(),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$count',
+            style: const TextStyle(
+              fontSize: 11,
+              height: 1.2,
+              fontWeight: FontWeight.w800,
+              color: TrudeColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Rotating sweep-gradient stroke around the active player.
+/// Rotating brass sweep with a soft outer glow around the active player.
 class _TurnRingPainter extends CustomPainter {
-  _TurnRingPainter({required this.rotation, required this.color});
+  _TurnRingPainter({required this.rotation});
 
   final double rotation;
-  final Color color;
+
+  static const _glowBlur = MaskFilter.blur(BlurStyle.normal, 4);
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = (Offset.zero & size).deflate(1.5);
-    final paint = Paint()
+    final shader = SweepGradient(
+      colors: [
+        TrudeColors.brass.withValues(alpha: 0.05),
+        TrudeColors.brassBright,
+        TrudeColors.brass.withValues(alpha: 0.05),
+      ],
+      stops: const [0.0, 0.55, 1.0],
+      transform: GradientRotation(rotation),
+    ).createShader(rect);
+
+    // Soft glow underneath, then the crisp brass sweep.
+    final glow = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = 6
+      ..maskFilter = _glowBlur
       ..shader = SweepGradient(
         colors: [
-          color.withValues(alpha: 0.05),
-          color,
-          color.withValues(alpha: 0.05),
+          TrudeColors.brassBright.withValues(alpha: 0.0),
+          TrudeColors.brassBright.withValues(alpha: 0.35),
+          TrudeColors.brassBright.withValues(alpha: 0.0),
         ],
         stops: const [0.0, 0.55, 1.0],
         transform: GradientRotation(rotation),
       ).createShader(rect);
-    canvas.drawArc(rect, 0, 2 * pi, false, paint);
+    canvas.drawArc(rect, 0, 2 * pi, false, glow);
+
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..shader = shader;
+    canvas.drawArc(rect, 0, 2 * pi, false, ring);
   }
 
   @override
-  bool shouldRepaint(_TurnRingPainter old) =>
-      old.rotation != rotation || old.color != color;
+  bool shouldRepaint(_TurnRingPainter old) => old.rotation != rotation;
+}
+
+/// The static brass bezel around every portrait.
+class _PortraitFramePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(1);
+    final bezel = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8
+      ..shader = const SweepGradient(
+        colors: [
+          TrudeColors.brassDark,
+          TrudeColors.brassBright,
+          TrudeColors.brass,
+          TrudeColors.brassDark,
+        ],
+        stops: [0.0, 0.25, 0.6, 1.0],
+      ).createShader(rect);
+    canvas.drawOval(rect, bezel);
+
+    // Inner recess shadow where the portrait sinks into the bezel.
+    final recess = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = TrudeColors.midnight.withValues(alpha: 0.5);
+    canvas.drawOval(rect.deflate(1.4), recess);
+  }
+
+  @override
+  bool shouldRepaint(_PortraitFramePainter old) => false;
+}
+
+/// Three tiny fanned ivory cards — the count chip pictogram.
+class _CardStackIconPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cardW = size.width * 0.62;
+    final cardH = size.height * 0.86;
+    final fill = Paint()..color = TrudeColors.ivory;
+    final edge = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.7
+      ..color = TrudeColors.inkBlack.withValues(alpha: 0.55);
+
+    final center = Offset(size.width / 2, size.height / 2);
+    for (final angle in [-0.22, 0.0, 0.22]) {
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(angle);
+      final r = RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset.zero, width: cardW, height: cardH),
+        const Radius.circular(1.6),
+      );
+      canvas.drawRRect(r, fill);
+      canvas.drawRRect(r, edge);
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CardStackIconPainter old) => false;
 }

@@ -132,12 +132,18 @@ class PileState {
 }
 
 class TurnInfo {
-  TurnInfo({required this.seat, required this.phase, required this.deadlineTs});
+  TurnInfo({
+    required this.seat,
+    required this.phase,
+    required this.deadlineTs,
+    this.durationMs,
+  });
 
   factory TurnInfo.fromJson(Map<String, dynamic> json) => TurnInfo(
         seat: _int(json['seat']),
         phase: json['phase'] as String,
         deadlineTs: _int(json['deadlineTs']),
+        durationMs: _intOrNull(json['durationMs']),
       );
 
   final int seat;
@@ -147,6 +153,10 @@ class TurnInfo {
 
   /// Epoch ms, server clock.
   final int deadlineTs;
+
+  /// The armed base decision window in ms (excluding animation grace).
+  /// Null when talking to an older server that predates the field.
+  final int? durationMs;
 }
 
 /// `stateFull` — full resync snapshot, sent on join/reconnect.
@@ -296,7 +306,8 @@ class TurnStartedEvent extends WireEvent {
       : seat = _int(json['seat']),
         phase = json['phase'] as String,
         mustCheck = json['mustCheck'] as bool,
-        deadlineTs = _int(json['deadlineTs']);
+        deadlineTs = _int(json['deadlineTs']),
+        durationMs = _intOrNull(json['durationMs']);
 
   final int seat;
 
@@ -304,6 +315,10 @@ class TurnStartedEvent extends WireEvent {
   final String phase;
   final bool mustCheck;
   final int deadlineTs;
+
+  /// The armed base decision window in ms (excluding animation grace).
+  /// Null when talking to an older server that predates the field.
+  final int? durationMs;
 }
 
 class CardsThrownEvent extends WireEvent {

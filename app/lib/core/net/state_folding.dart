@@ -42,6 +42,7 @@ ClientGameState foldStateFull(
             phase: s.turn!.phase,
             mustCheck: s.mustCheck,
             deadlineTs: s.turn!.deadlineTs,
+            durationMs: s.turn!.durationMs ?? s.config.turnTimerSec * 1000,
           ),
     mustCheck: s.mustCheck,
     myHand: s.hand,
@@ -102,6 +103,7 @@ ClientGameState applyEventTo(
           phase: event.phase,
           mustCheck: event.mustCheck,
           deadlineTs: event.deadlineTs,
+          durationMs: event.durationMs ?? s.turnTimerSec * 1000,
         ),
         mustCheck: event.mustCheck,
       );

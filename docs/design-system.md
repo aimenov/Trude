@@ -1,0 +1,98 @@
+# Trude Design System — "Midnight Parlor"
+
+The visual redesign brief. Tokens live in `app/lib/core/theme/trude_theme.dart`
+(`TrudeColors`, `TrudeGradients`, `TrudeDims`, `TrudeType`, `buildTrudeTheme()`).
+**No inline hex colors anywhere** — every color names a token. Every duration/curve
+names a `MotionSpec` constant.
+
+## Direction
+
+A moody, premium card parlor at midnight. A deep-green felt table sits in a pool
+of warm light; everything outside the light falls into `midnight`. Brass is the
+only metal: frames, stamps, turn rings, section labels. Cards are ivory with
+classic engraved-style pips and serif indices. The display voice is
+**Playfair Display** (family `PlayfairDisplay`, weights 400/700/900 + 700 italic,
+Cyrillic-capable — RU strings must render in it). Body text stays on the default
+sans. Mood words: candlelight, engraving, sleight-of-hand, wry humor. NOT:
+neon, flat corporate, cartoon casino.
+
+## Card anatomy (the deck redesign)
+
+- Aspect stays `kCardAspect = 68/48`; corner radius `TrudeDims.cardRadiusFactor * width`.
+- Face: `ivory` base with a subtle `ivoryShade` edge bevel; a thin inner hairline
+  frame inset ~4% of width.
+- Corner indices top-left and bottom-right (bottom-right rotated 180°): serif rank
+  over a small suit pip, `inkBlack` for ♠♣, `inkRed` for ♥♦.
+- Number cards (2–10 and 6–10 in the small deck): **classic pip layouts** (the
+  standard arrangements: e.g. 7 = 2 columns of 3 + 1 center-high; bottom-half
+  pips rotated 180°). Pips are drawn suit shapes (painter paths), not text glyphs.
+- Court cards (J/Q/K): an engraved **medallion** — a large ornate serif letter in
+  a double-ring brass-inked frame with corner flourishes and a small suit pip
+  above/below. No figurative portraits.
+- Ace: one large ornate center pip with an engraved halo ring.
+- **Joker**: `jokerPurple` ink; a painter-drawn jester cap silhouette (three
+  curved horns with bell dots) over the serif word JOKER, with faint diagonal
+  harlequin diamonds in the background. Slightly mischievous, never scary.
+- Card back: `cardBackTeal` field inside an ivory border frame; a symmetric
+  brass **guilloche lattice** (interlocking diamond/curve grid painter) with a
+  small central brass medallion "T". Must look good at 12px-wide pile scale and
+  at 2x reveal scale. Keep the existing gloss shimmer hook.
+- Golden (quad) variant: warm `brassBright` overlay wash + brass frame.
+  Selected variant: brass outer glow + 2dp lift shadow (do not change geometry).
+
+## Physics motion language (the animation upgrade)
+
+Cards are **thrown, not tweened**. The flight layer gains a ballistic mode:
+
+- Launch: position + velocity vector (dp/s) + angular velocity (rad/s). While
+  airborne the card scales up ~8% at apex (height illusion) and casts a softer,
+  offset shadow.
+- Flight path: velocity integrates with light drag; NOT a fixed bezier. Arrival
+  is guaranteed: steer the velocity toward the target with a critically-damped
+  spring so physics feel never sacrifices landing exactness.
+- Landing: the card touches down at ~85% of the distance, then **slides** the
+  rest with friction (decelerating), rotation settling into its final
+  `pileEntryPose`. A 1-frame squash (scaleY 0.96) on touchdown sells weight.
+- Pile reaction: when a card lands, the top 2–3 resting pile cards get a small
+  damped nudge (1–3dp translation + ~1° rotation impulse, decaying ~250ms).
+- **Flick-to-throw**: with cards selected and it being my turn, dragging the
+  selection upward lets the cards follow the finger (slight lag/tilt toward
+  drag direction); releasing with upward velocity ≥ threshold throws them —
+  the real `throwCards` message fires on release and the launch velocity of the
+  animation IS the release velocity (clamped). Below threshold or dragging back
+  down: cards spring back to the fan. The THROW button remains and synthesizes
+  a natural launch velocity. Timer-based/opponent throws synthesize velocities
+  from the thrower's seat direction with MotionJitter variance.
+- Everything still respects `AnimationSpeed` scaling and reduce-motion (which
+  collapses to instant placement).
+
+## File ownership (agents MUST stay in their lane)
+
+- **cards**: `features/game/widgets/card_widgets.dart` + new
+  `features/game/widgets/card_painters.dart`. Public API must not shrink:
+  `TrudeCardBack(width, shimmer)`, `TrudeCardFace(rank, suit, width, selected, golden)`,
+  `kCardAspect`, `pileEntryPose(index)` keep signatures (additive params OK).
+- **physics**: `features/game/anim/{card_flight,motion_spec,motion_jitter,event_steps}.dart`,
+  `features/game/widgets/{my_hand,pile_stack}.dart`. MotionSpec is additive-only
+  (existing constant names stay). May add optional constructor params with
+  defaults to MyHand/PileStack but table_screen call sites must keep compiling
+  unchanged.
+- **table**: `features/game/table_screen.dart`,
+  `features/game/anim/{table_fx_layer,reveal_overlay,claim_callout,quad_celebration,game_over_overlay,emoji_burst}.dart`,
+  `features/game/widgets/{seat_avatar,countdown_ring}.dart`.
+- **meta**: everything under `features/{nickname,home,rooms,lobby,results,achievements,settings}/`
+  and `achievement_toast.dart`.
+- Frozen for everyone: `pubspec.yaml`, `core/theme/trude_theme.dart`, `app.dart`,
+  anything under `core/net/`, `core/storage/`, `l10n`. If a token is missing,
+  approximate with the nearest existing token and note it in your report.
+
+## Quality bar
+
+- Portrait phone-first; everything must degrade gracefully to 320dp width.
+- 60fps: painters cache `Path`/`Paint` objects where hot; no `Opacity` widgets
+  inside per-frame builders (use `withValues(alpha:)` paints); shimmer/idle
+  tickers stay behind existing gates.
+- All existing tests keep passing (update tests in your lane if they assert
+  old visuals); `flutter analyze` clean in your lane.
+- Never leak hidden info visually: face-down cards stay anonymous; the joker
+  gets no public tell.

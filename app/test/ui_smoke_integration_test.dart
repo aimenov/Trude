@@ -242,10 +242,18 @@ Future<void> main() async {
         // Start the game from the lobby UI.
         log('starting game');
         await tester.ensureVisible(find.text(Strings.start));
+        await tester.pump(); // ensureVisible jumps the scroll offset; lay out before tapping
         await tester.tap(find.text(Strings.start));
         await spin('game start',
             () => container.read(gameStateProvider).roomPhase == 'playing');
         log('game started');
+
+        // Regression lock (empty-hands-at-start): the RENDERED hand must be
+        // dealt even though the game-start batch fires while the lobby is
+        // still mounted — the app-root subscription catches it. Fails on the
+        // pre-fix code where the rendered state stayed empty forever.
+        await spin('rendered hand dealt',
+            () => container.read(renderedGameStateProvider).myHand.isNotEmpty);
 
         // My random-legal-move policy, submitted through the room while the
         // table animates. One action per turn (keyed by deadline).

@@ -46,7 +46,7 @@ Reaction allowlist v1: `joy` `sob` `angry` `monocle` `clown` `fire` `thumbsup` `
 
 | Message | Target | Payload |
 |---|---|---|
-| `stateFull` | one client | `{ actionCount, phase: "lobby"\|"playing"\|"finished", config: { deckSize, turnTimerSec, maxPlayers }, roomCode?: string, players: [{ userId, nickname, avatar, seat, cardCount, connected, autoPilot, isOut, isAdmin }], pile: { rank: Rank\|null, totalCount, groups: [{ seat, count }] }, lastThrowSeat: number\|null, mustCheck: boolean, retiredRanks: Rank[], discarded: Card[], turn: { seat, phase: Phase, deadlineTs }\|null, hand: Card[], lastResolution: EventBatch\|null, loserSeat: number\|null }` |
+| `stateFull` | one client | `{ actionCount, phase: "lobby"\|"playing"\|"finished", config: { deckSize, turnTimerSec, maxPlayers }, roomCode?: string, players: [{ userId, nickname, avatar, seat, cardCount, connected, autoPilot, isOut, isAdmin }], pile: { rank: Rank\|null, totalCount, groups: [{ seat, count }] }, lastThrowSeat: number\|null, mustCheck: boolean, retiredRanks: Rank[], discarded: Card[], turn: { seat, phase: Phase, deadlineTs, durationMs }\|null, hand: Card[], lastResolution: EventBatch\|null, loserSeat: number\|null }` |
 | `hand` | one client | `{ cards: Card[] }` — full snapshot after every change to YOUR hand (deal, throw, pickup, quad discard) and on reconnect |
 | `pong` | one client | `{ t: number, serverT: number }` |
 
@@ -54,19 +54,19 @@ Reaction allowlist v1: `joy` `sob` `angry` `monocle` `clown` `fire` `thumbsup` `
 
 ### Event batches
 
-Broadcast as `events { actionCount: number, events: Event[] }` — ordered; client's AnimationQueue paces rendering. Server adds ~2.5 s animation grace to `deadlineTs` after reveal/pickup batches.
+Broadcast as `events { actionCount: number, events: Event[] }` — ordered; client's AnimationQueue paces rendering. The server derives an **animation grace** from each batch's contents (deal ≈2.5 s; reveal ≈2.7 s + a pickup estimate scaled by `pickedCount`; quad discard ≈1.2 s each; player-out ≈0.6 s each; small settle buffer; total capped at 8 s — mirroring the client MotionSpec) and bakes it into the next `deadlineTs`, so the decision window starts draining roughly when the client's animation queue does.
 
 | Event | Payload | Notes |
 |---|---|---|
 | `gameStarted` | `{ deckSize, seatOrder: [{ seat, userId }], handCounts: number[] }` | deal animation runs off this |
-| `turnStarted` | `{ seat, phase: Phase, mustCheck: boolean, deadlineTs }` | after every resolution; drives turn ring + action bar |
+| `turnStarted` | `{ seat, phase: Phase, mustCheck: boolean, deadlineTs, durationMs }` | after every resolution; drives turn ring + action bar. `durationMs` = the armed base decision window in ms, **excluding** animation grace (ring fraction = remaining/`durationMs`, clamped — pinned full while grace runs). Also re-broadcast synthetically (same `seat`/`phase`, new `deadlineTs`/`durationMs`) when a running turn is shortened or restored by connectivity changes |
 | `cardsThrown` | `{ seat, count: 1\|2\|3, rank: Rank, isLead: boolean }` | no card ids — flights use synthetic keys |
 | `checkResult` | `{ checkerSeat, targetSeat, flipIndex, flipped: Card, matched: boolean, pickerSeat, pickedCount, nextLeadSeat }` | the reveal set piece; `nextLeadSeat` is authoritative (winner-leads rule lives server-side) |
 | `fourDiscarded` | `{ seat, rank: Rank, cards: Card[] }` | public celebration; rank retires |
 | `playerOut` | `{ seat }` | safe! |
 | `autoActed` | `{ seat, kind: "lead"\|"check" }` | timeout/autopilot acted for a player |
 | `autoPilot` | `{ seat, on: boolean }` | badge |
-| `playerConnection` | `{ seat, connected: boolean }` | reconnecting plug icon; disconnected players get shortened 10 s timer |
+| `playerConnection` | `{ seat, connected: boolean }` | reconnecting plug icon. Timer rule: a drop only shortens the actor's running turn to the 10 s window after a 5 s disconnect grace (blips are no-ops); a consented mid-game quit shortens immediately; new turns arm 10 s only for autopilot seats or players gone > 5 s. Reconnecting restores the full base window **only if** the running turn was actually shortened |
 | `seatSwapRequested` | (target client only) `{ fromSeat, fromUserId }` | |
 | `seatSwapResolved` | `{ seatA, seatB, accepted: boolean }` | |
 | `playerJoined` / `playerLeft` | `{ userId, nickname, avatar, seat }` / `{ userId, seat }` | lobby |

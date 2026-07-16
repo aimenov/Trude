@@ -6,6 +6,8 @@ import '../../core/net/connection_providers.dart';
 import '../../core/net/meta_providers.dart';
 import '../../core/storage/identity_providers.dart';
 import '../../core/strings.dart';
+import '../../core/theme/trude_theme.dart';
+import 'parlor_widgets.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -74,55 +76,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final nickname = ref.watch(identityProvider)?.nickname ?? '';
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(Strings.appTitle),
-        actions: [
-          IconButton(
-            tooltip: Strings.achievementsTitle,
-            icon: const Icon(Icons.emoji_events_outlined),
-            onPressed: () => context.go('/achievements'),
-          ),
-          IconButton(
-            tooltip: Strings.settingsTitle,
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.go('/settings'),
-          ),
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(Strings.playingAs(nickname),
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center),
-                const _StatsStrip(),
-                TextButton(
-                  onPressed: () => context.go('/nickname'),
-                  child: Text(Strings.changeNickname),
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _busy ? null : _createRoom,
-                  child: Text(Strings.createRoom),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.tonal(
-                  onPressed: _busy ? null : () => context.go('/rooms'),
-                  child: Text(Strings.openRooms),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _busy ? null : _joinByCode,
-                  child: Text(Strings.joinByCode),
-                ),
-              ],
+    return ParlorBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(Strings.appTitle.toUpperCase()),
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: BrassFlourish(width: 190)),
+                  const SizedBox(height: 16),
+                  // Identity line: italic serif, with a quiet edit affordance.
+                  Text(
+                    Strings.playingAs(nickname),
+                    textAlign: TextAlign.center,
+                    style: TrudeType.cardIndex.copyWith(
+                      fontStyle: FontStyle.italic,
+                      fontSize: 18,
+                      color: TrudeColors.textPrimary,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => context.go('/nickname'),
+                    icon: const Icon(Icons.edit_outlined, size: 15),
+                    label: Text(Strings.changeNickname),
+                    style: TextButton.styleFrom(
+                      foregroundColor: TrudeColors.textMuted,
+                      textStyle: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  const _StatsStrip(),
+                  const SizedBox(height: 22),
+                  // The primary CTA: a grand brass slab.
+                  BrassButton(
+                    height: 62,
+                    onPressed: _busy ? null : _createRoom,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.style_outlined),
+                        const SizedBox(width: 10),
+                        Text(Strings.createRoom),
+                      ],
+                    ),
+                  ),
+                  const EtchedDivider(),
+                  // The parlor doors: four plaque cards.
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.35,
+                    children: [
+                      _DoorPlaque(
+                        icon: Icons.meeting_room_outlined,
+                        label: Strings.openRooms,
+                        onTap: _busy ? null : () => context.go('/rooms'),
+                      ),
+                      _DoorPlaque(
+                        icon: Icons.vpn_key_outlined,
+                        label: Strings.joinByCode,
+                        onTap: _busy ? null : _joinByCode,
+                      ),
+                      _DoorPlaque(
+                        icon: Icons.emoji_events_outlined,
+                        label: Strings.achievementsTitle,
+                        onTap: () => context.go('/achievements'),
+                      ),
+                      _DoorPlaque(
+                        icon: Icons.settings_outlined,
+                        label: Strings.settingsTitle,
+                        onTap: () => context.go('/settings'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -131,8 +169,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-/// Lifetime stats under the nickname (games · wins · best streak); hidden
-/// while loading or when the server is unreachable.
+/// A parlor door plaque: raised panel, brass-ringed icon, serif label.
+class _DoorPlaque extends StatelessWidget {
+  const _DoorPlaque({required this.icon, required this.label, this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: TrudeColors.surfaceRaised,
+          borderRadius: BorderRadius.circular(TrudeDims.panelRadius),
+          border: Border.all(color: TrudeColors.hairline),
+          boxShadow: [
+            BoxShadow(
+              color: TrudeColors.midnight.withValues(alpha: 0.45),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: TrudeColors.surfaceSunken,
+                border: Border.all(color: TrudeColors.brassDark),
+              ),
+              child: Icon(icon, size: 19, color: TrudeColors.brassBright),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TrudeType.cardIndex.copyWith(
+                fontSize: 13.5,
+                letterSpacing: 0.4,
+                color: TrudeColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Lifetime stats under the nickname as three brass-etched plaques
+/// (games · wins · best streak); hidden while loading or when the server is
+/// unreachable. Splits the localized strip string on its "·" separators so no
+/// new l10n keys are needed.
 class _StatsStrip extends ConsumerWidget {
   const _StatsStrip();
 
@@ -140,14 +238,66 @@ class _StatsStrip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(meProvider).valueOrNull?.stats;
     if (stats == null) return const SizedBox(height: 4);
+    final strip = Strings.statsStrip(
+        stats.gamesPlayed, stats.gamesWon, stats.bestWinStreak);
+    final parts = strip.split('·').map((s) => s.trim()).toList();
+    if (parts.length != 3) {
+      // Locale without the expected separators: one plaque with the line.
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Center(
+          child: EtchedPlaque(
+            child: Text(strip,
+                style: TrudeType.etched.copyWith(
+                    fontSize: 11, letterSpacing: 1.2)),
+          ),
+        ),
+      );
+    }
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Text(
-        Strings.statsStrip(
-            stats.gamesPlayed, stats.gamesWon, stats.bestWinStreak),
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant),
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          for (var i = 0; i < parts.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(child: _StatPlaque(text: parts[i])),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One plaque: trailing number rendered big in serif over the etched label.
+class _StatPlaque extends StatelessWidget {
+  const _StatPlaque({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final match = RegExp(r'^(.*?)\s*(\d+)$').firstMatch(text);
+    final label = match?.group(1) ?? text;
+    final value = match?.group(2);
+    return EtchedPlaque(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (value != null)
+            Text(value,
+                style: TrudeType.display.copyWith(
+                    fontSize: 20,
+                    height: 1.1,
+                    color: TrudeColors.brassBright)),
+          Text(
+            label.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TrudeType.etched.copyWith(
+                fontSize: 8.5, letterSpacing: 1.4),
+          ),
+        ],
       ),
     );
   }
@@ -214,8 +364,8 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
           ),
           const SizedBox(height: 16),
           Text(Strings.deckLabel,
-              style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: 4),
+              style: TrudeType.etched.copyWith(fontSize: 11)),
+          const SizedBox(height: 6),
           SegmentedButton<int>(
             segments: [
               ButtonSegment(value: 37, label: Text(Strings.deckOption(37))),
@@ -266,6 +416,9 @@ class _JoinByCodeDialogState extends State<_JoinByCodeDialog> {
         autofocus: true,
         maxLength: 6,
         textCapitalization: TextCapitalization.characters,
+        style: TrudeType.cardIndex.copyWith(
+            fontSize: 20, letterSpacing: 4, color: TrudeColors.textPrimary),
+        textAlign: TextAlign.center,
         decoration: InputDecoration(labelText: Strings.roomCodeHint),
         onSubmitted: (v) => Navigator.of(context).pop(v.trim().toUpperCase()),
       ),

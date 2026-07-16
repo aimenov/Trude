@@ -68,6 +68,7 @@ class TurnView {
     required this.phase,
     required this.mustCheck,
     required this.deadlineTs,
+    required this.durationMs,
   });
 
   final int seat;
@@ -78,6 +79,11 @@ class TurnView {
 
   /// Epoch ms, server clock.
   final int deadlineTs;
+
+  /// The armed base decision window in ms (excluding animation grace) — the
+  /// countdown ring's `total`. Folding falls back to `turnTimerSec * 1000`
+  /// when the server omits the wire field.
+  final int durationMs;
 }
 
 class ClientGameState {

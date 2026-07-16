@@ -1,5 +1,6 @@
 /// Physics-y emoji reaction bursts: 5-9 copies fountain up from the sender's
-/// avatar with random velocity, spin, and gravity, fading over ~1.2 s.
+/// avatar with random velocity, spin, and gravity, fading over ~1.2 s, with a
+/// subtle brass ring popping outward at the spawn point.
 /// A single custom [Ticker] drives all live particles.
 library;
 
@@ -8,6 +9,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../../../core/theme/trude_theme.dart';
 import 'motion_jitter.dart';
 import 'motion_spec.dart';
 
@@ -29,8 +31,16 @@ class _EmojiParticle {
   final double size;
 }
 
+class _RingPop {
+  _RingPop({required this.origin, required this.born});
+
+  final Offset origin;
+  final Duration born;
+}
+
 class EmojiBurstController extends ChangeNotifier {
   final List<_EmojiParticle> _particles = [];
+  final List<_RingPop> _rings = [];
   final List<({String emoji, Offset origin})> _pendingBursts = [];
 
   /// Fountain [emoji] up from [origin] (global coords).
@@ -84,6 +94,8 @@ class _EmojiBurstLayerState extends State<EmojiBurstLayer>
   }
 
   void _spawn(String emoji, Offset origin) {
+    // A brass ring pops at the spawn point under the fountain.
+    widget.controller._rings.add(_RingPop(origin: origin, born: _elapsed));
     final count = motionJitter.intRange(
         MotionSpec.reactionMinCount, MotionSpec.reactionMaxCount);
     for (var i = 0; i < count; i++) {
@@ -106,7 +118,10 @@ class _EmojiBurstLayerState extends State<EmojiBurstLayer>
     final particles = widget.controller._particles;
     particles.removeWhere(
         (p) => elapsed - p.born > MotionSpec.reactionBurstLife);
-    if (particles.isEmpty) {
+    final rings = widget.controller._rings;
+    rings.removeWhere(
+        (r) => elapsed - r.born > TableMotionSpec.emojiRingPopLife);
+    if (particles.isEmpty && rings.isEmpty) {
       _ticker.stop();
       _elapsed = Duration.zero;
     }
@@ -125,6 +140,8 @@ class _EmojiBurstLayerState extends State<EmojiBurstLayer>
         clipBehavior: Clip.none,
         fit: StackFit.expand,
         children: [
+          for (final r in widget.controller._rings)
+            _buildRing(r, layerOrigin),
           for (final p in widget.controller._particles)
             _buildParticle(p, layerOrigin, lifeSec),
         ],
@@ -151,6 +168,34 @@ class _EmojiBurstLayerState extends State<EmojiBurstLayer>
         child: Transform.rotate(
           angle: p.spin * ageSec,
           child: Text(p.emoji, style: TextStyle(fontSize: p.size)),
+        ),
+      ),
+    );
+  }
+
+  /// The subtle brass ring expanding and thinning out at the spawn point.
+  Widget _buildRing(_RingPop r, Offset layerOrigin) {
+    final lifeMs = TableMotionSpec.emojiRingPopLife.inMilliseconds;
+    final t = ((_elapsed - r.born).inMilliseconds / lifeMs).clamp(0.0, 1.0);
+    final eased = Curves.easeOutCubic.transform(t);
+    final radius = 6 + (TableMotionSpec.emojiRingPopRadius - 6) * eased;
+    final pos = r.origin - layerOrigin;
+
+    return Positioned(
+      left: pos.dx - radius,
+      top: pos.dy - radius,
+      child: IgnorePointer(
+        child: Container(
+          width: radius * 2,
+          height: radius * 2,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: TrudeColors.brassBright
+                  .withValues(alpha: 0.7 * (1 - t)),
+              width: 0.6 + 1.8 * (1 - t),
+            ),
+          ),
         ),
       ),
     );

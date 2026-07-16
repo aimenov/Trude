@@ -2,6 +2,20 @@
 /// newly received cards pop in with a stagger (the hand visibly bloats after
 /// a pickup), and the whole fan micro-shivers in the last urgent seconds of
 /// my turn.
+///
+/// FLICK-TO-THROW: with cards selected and a throw armed
+/// ([MyHandView.onFlickThrow] non-null), dragging a SELECTED card upward
+/// makes the whole selection follow the finger — with per-card lag and a
+/// tilt toward the drag direction — and releasing with upward velocity ≥
+/// [MotionSpec.flickThrowSpeed] fires the same throw callback as the THROW
+/// button while publishing the release velocity to [FlickLaunch], so the
+/// flight animation launches with the exact flick velocity (clamped). A
+/// sub-threshold release springs the cards back into the fan.
+///
+/// The drag recognizer lives ONLY on selected cards: taps on unselected
+/// cards never compete with a drag arena, so slightly-draggy taps select
+/// reliably. Tap-to-select, the fan scroll, and the urgency shiver are
+/// untouched.
 library;
 
 import 'dart:async';
@@ -11,6 +25,7 @@ import 'package:flutter/material.dart' hide Card;
 
 import '../../../core/motion/animation_speed.dart';
 import '../../../core/net/protocol_models.dart';
+import '../anim/card_flight.dart';
 import '../anim/motion_spec.dart';
 import 'card_widgets.dart';
 
@@ -24,6 +39,7 @@ class MyHandView extends StatefulWidget {
     required this.shiver,
     required this.speed,
     this.cardWidth = 46,
+    this.onFlickThrow,
   });
 
   final List<Card> cards;
@@ -38,6 +54,13 @@ class MyHandView extends StatefulWidget {
   final AnimationSpeed speed;
   final double cardWidth;
 
+  /// Fired by a successful upward flick — wire it to the SAME action as the
+  /// THROW button (it must itself guard legality, e.g. a chosen rank when
+  /// leading). Null disables the flick gesture entirely. The release
+  /// velocity is handed to the flight layer via [FlickLaunch] just before
+  /// this fires.
+  final VoidCallback? onFlickThrow;
+
   @override
   State<MyHandView> createState() => _MyHandViewState();
 }
@@ -51,6 +74,21 @@ class _MyHandViewState extends State<MyHandView>
   Timer? _shiverTimer;
   final _rng = Random();
   double _shiverSeed = 0;
+
+  // -- Flick state -------------------------------------------------------------
+
+  /// Raw accumulated finger offset of the active vertical drag.
+  Offset _rawDrag = Offset.zero;
+  bool _dragging = false;
+
+  /// Where the spring-back started from after a sub-threshold release.
+  Offset _springFrom = Offset.zero;
+  late final AnimationController _spring = AnimationController(
+    vsync: this,
+    duration: MotionSpec.flickSpringBack,
+  )..addListener(() {
+      if (mounted) setState(() {});
+    });
 
   @override
   void initState() {
@@ -72,6 +110,12 @@ class _MyHandViewState extends State<MyHandView>
     if (old.shiver != widget.shiver || old.speed != widget.speed) {
       _syncShiver();
     }
+    // The turn ended or the selection vanished mid-drag: drop the gesture.
+    if (_dragging && !_flickEnabled) {
+      _dragging = false;
+      _rawDrag = Offset.zero;
+      _springFrom = Offset.zero;
+    }
   }
 
   void _syncShiver() {
@@ -86,16 +130,114 @@ class _MyHandViewState extends State<MyHandView>
   @override
   void dispose() {
     _shiverTimer?.cancel();
+    _spring.dispose();
     super.dispose();
   }
+
+  // -- Flick gesture -------------------------------------------------------------
+
+  bool get _flickEnabled =>
+      widget.onFlickThrow != null &&
+      widget.selectable &&
+      widget.selectedIds.isNotEmpty;
+
+  /// The current visual displacement of the dragged selection: the live
+  /// (rubber-banded) finger offset while dragging, the settling spring
+  /// afterwards, zero at rest.
+  Offset get _displayDrag {
+    if (_dragging) {
+      final dy = _rawDrag.dy;
+      return Offset(
+        _rawDrag.dx * MotionSpec.flickFollowDx,
+        dy <= 0
+            ? dy
+            : min(MotionSpec.flickMaxDown, dy * MotionSpec.flickDownRubberBand),
+      );
+    }
+    if (_spring.isAnimating) {
+      // easeOutBack overshoots past 1: the fan dips a touch below rest and
+      // settles — the spring feel.
+      final t = MotionSpec.flickSpringBackCurve.transform(_spring.value);
+      return _springFrom * (1 - t);
+    }
+    return Offset.zero;
+  }
+
+  void _onFlickStart(DragStartDetails details) {
+    if (!_flickEnabled) return;
+    _spring.stop();
+    setState(() {
+      _dragging = true;
+      _rawDrag = Offset.zero;
+    });
+  }
+
+  void _onFlickUpdate(DragUpdateDetails details) {
+    if (!_dragging) return;
+    setState(() => _rawDrag += details.delta);
+  }
+
+  void _onFlickEnd(DragEndDetails details) {
+    if (!_dragging) return;
+    final velocity = details.velocity.pixelsPerSecond;
+    final thrown = _flickEnabled &&
+        _rawDrag.dy <= -MotionSpec.flickMinDrag &&
+        velocity.dy <= -MotionSpec.flickThrowSpeed;
+    if (thrown) {
+      _publishFlick(velocity);
+      widget.onFlickThrow?.call();
+    }
+    _settleBack();
+  }
+
+  void _onFlickCancel() {
+    if (_dragging) _settleBack();
+  }
+
+  void _settleBack() {
+    _springFrom = _displayDrag;
+    _dragging = false;
+    _rawDrag = Offset.zero;
+    final duration = widget.speed.scale(MotionSpec.flickSpringBack);
+    if (duration == Duration.zero || _springFrom == Offset.zero) {
+      // Reduce motion (or nothing to settle): snap back instantly.
+      setState(() => _springFrom = Offset.zero);
+      return;
+    }
+    _spring.duration = duration;
+    _spring.forward(from: 0);
+  }
+
+  /// Hands the clamped release velocity to the flight layer: the launch
+  /// velocity of my throw's flight IS this flick.
+  void _publishFlick(Offset velocity) {
+    final speed = velocity.distance.clamp(
+        MotionSpec.flickLaunchSpeedMin, MotionSpec.flickLaunchSpeedMax);
+    var dir = velocity.distance < 1
+        ? const Offset(0, -1)
+        : velocity / velocity.distance;
+    if (dir.dy > -0.2) dir = const Offset(0, -1); // must read as upward
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return;
+    final rect = MatrixUtils.transformRect(
+        box.getTransformTo(null), Offset.zero & box.size);
+    FlickLaunch.publish(velocity: dir * speed, source: rect);
+  }
+
+  // -- Build ---------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     final w = widget.cardWidth;
+    // No whole-hand drag detector: the flick recognizer is attached per-card
+    // (selected cards only) in [_handCard], so taps never lose a gesture
+    // arena to a drag.
     return SizedBox(
       height: w * kCardAspect + 14,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        // Dragged cards may ride above the hand strip.
+        clipBehavior: Clip.none,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         itemCount: widget.cards.length,
         itemBuilder: (context, i) => _handCard(widget.cards[i], i, w),
@@ -126,8 +268,8 @@ class _MyHandViewState extends State<MyHandView>
       // Per-card pseudo-random nervous offset, refreshed by the shiver timer.
       final h = (card.id.hashCode ^ _shiverSeed.toInt()) & 0xffff;
       final dx = ((h % 100) / 100 - 0.5) * MotionSpec.handShiverAmplitude;
-      final dy = (((h ~/ 100) % 100) / 100 - 0.5) *
-          MotionSpec.handShiverAmplitude;
+      final dy =
+          (((h ~/ 100) % 100) / 100 - 0.5) * MotionSpec.handShiverAmplitude;
       child = Transform.translate(offset: Offset(dx, dy), child: child);
     }
 
@@ -152,10 +294,48 @@ class _MyHandViewState extends State<MyHandView>
       );
     }
 
+    // The dragged (or spring-settling) selection follows the finger with
+    // per-card lag, a tilt toward the drag direction, and a slight lift.
+    final drag = _displayDrag;
+    if (selected && drag != Offset.zero && !widget.speed.isOff) {
+      var lagIndex = 0;
+      for (var k = 0; k < index; k++) {
+        if (widget.selectedIds.contains(widget.cards[k].id)) lagIndex++;
+      }
+      final follow = max(
+          MotionSpec.flickFollowFloor,
+          MotionSpec.flickFollow -
+              lagIndex * MotionSpec.flickFollowLagPerCard);
+      final tilt = (drag.dx *
+              MotionSpec.flickTiltPerDx *
+              (1 + lagIndex * MotionSpec.flickTiltLagBoost))
+          .clamp(-MotionSpec.flickMaxTilt, MotionSpec.flickMaxTilt);
+      final lift = (-min(0.0, drag.dy) / MotionSpec.flickLiftDistance)
+          .clamp(0.0, 1.0);
+      child = Transform.translate(
+        offset: drag * follow,
+        child: Transform.rotate(
+          angle: tilt,
+          child: Transform.scale(
+            scale: 1 + MotionSpec.flickLiftScale * lift,
+            child: child,
+          ),
+        ),
+      );
+    }
+
+    // The vertical-drag (flick) recognizer exists only on SELECTED cards
+    // while a flick is armed. The drag state is shared across the whole
+    // widget, so dragging any selected card moves the entire selection
+    // together; unselected cards carry a lone tap recognizer — nothing
+    // competes with (or delays) selection taps.
+    final flickHere = _flickEnabled && selected;
     return GestureDetector(
-      onTap: widget.selectable
-          ? () => widget.onToggle(card, !selected)
-          : null,
+      onTap: widget.selectable ? () => widget.onToggle(card, !selected) : null,
+      onVerticalDragStart: flickHere ? _onFlickStart : null,
+      onVerticalDragUpdate: flickHere ? _onFlickUpdate : null,
+      onVerticalDragEnd: flickHere ? _onFlickEnd : null,
+      onVerticalDragCancel: flickHere ? _onFlickCancel : null,
       child: child,
     );
   }

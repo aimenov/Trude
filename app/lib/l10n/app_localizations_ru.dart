@@ -199,7 +199,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get tapCardToFlip => 'Коснись карты, чтобы открыть её';
 
   @override
-  String get yourTurnLead => 'Твой ход — заходи';
+  String get yourTurnLead => 'Твой ход — ходи';
 
   @override
   String get yourTurnRespond => 'Твой ход — веришь или нет?';

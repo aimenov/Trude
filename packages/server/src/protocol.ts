@@ -65,7 +65,7 @@ export interface EventBatch {
 /** Engine events pass through; turn/gameStarted gain room-level fields. */
 export type WireEvent =
   | { type: 'gameStarted'; deckSize: number; seatOrder: { seat: number; userId: string }[]; handCounts: number[] }
-  | { type: 'turnStarted'; seat: number; phase: 'lead' | 'respond'; mustCheck: boolean; deadlineTs: number }
+  | { type: 'turnStarted'; seat: number; phase: 'lead' | 'respond'; mustCheck: boolean; deadlineTs: number; durationMs: number }
   | Extract<EngineEvent, { type: 'cardsThrown' | 'checkResult' | 'fourDiscarded' | 'playerOut' | 'autoActed' }>
   | { type: 'autoPilot'; seat: number; on: boolean }
   | { type: 'playerConnection'; seat: number; connected: boolean }
@@ -91,7 +91,7 @@ export interface StateFull {
   mustCheck: boolean;
   retiredRanks: Rank[];
   discarded: Card[];
-  turn: { seat: number; phase: 'lead' | 'respond'; deadlineTs: number } | null;
+  turn: { seat: number; phase: 'lead' | 'respond'; deadlineTs: number; durationMs: number } | null;
   hand: Card[];
   lastResolution: EventBatch | null;
   loserSeat: number | null;

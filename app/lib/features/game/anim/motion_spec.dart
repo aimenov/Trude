@@ -129,6 +129,159 @@ abstract final class MotionSpec {
 
   static const handCardEnter = Duration(milliseconds: 260);
   static const handCardEnterCurve = Curves.easeOutBack;
+
+  // -- Ballistic flight (thrown, not tweened) -----------------------------------
+
+  /// Fraction of the flight (in time AND straight-line distance) at which the
+  /// card touches down; the remainder is the friction slide into the exact
+  /// target pose, so physics feel never sacrifices landing exactness.
+  static const ballisticTouchdownAt = 0.85;
+
+  /// Normalized stiffness of the critically-damped steering spring:
+  /// omega = ballisticSpringOmega / airborne-time. The spring's damping term
+  /// doubles as the light aerodynamic drag on the launch velocity.
+  static const ballisticSpringOmega = 5.0;
+
+  /// Hard wall cap per flight — a flight can never outlive its AnimationQueue
+  /// step schedule, so the queue never stalls on a runaway flight.
+  static const ballisticFlightCap = Duration(milliseconds: 900);
+
+  /// Synthesized launch speed relative to the straight-line pace (>1 = thrown
+  /// hard; the spring bleeds off the excess like drag).
+  static const ballisticLaunchBoost = 1.55;
+
+  /// Upward bias mixed into synthesized launch directions (toss arc).
+  static const ballisticLoft = 0.38;
+
+  /// MotionJitter variance of synthesized launches: aim (degrees) and speed
+  /// (fraction) — no two throws are ever identical.
+  static const ballisticAimJitterDeg = 7.0;
+  static const ballisticSpeedJitter = 0.16;
+
+  /// Angular-velocity variance (fraction) and the residual tumble (radians
+  /// over one flight) given to flights that request no spin.
+  static const ballisticSpinJitter = 0.35;
+  static const ballisticIdleSpin = 0.5;
+
+  /// Airborne scale-up at the apex (height illusion).
+  static const ballisticApexScale = 0.08;
+
+  /// Touchdown squash: the scaleY dip and the fraction of the flight it lasts
+  /// (~1-2 frames at normal speed).
+  static const ballisticSquashScaleY = 0.96;
+  static const ballisticSquashSpan = 0.07;
+
+  /// Friction slide over the last stretch: decelerating into the pose.
+  static const ballisticSlideCurve = Curves.easeOutCubic;
+
+  /// Airborne soft shadow: max offset (dp), alpha, and blur ramp with height.
+  static const ballisticShadowDropX = 3.0;
+  static const ballisticShadowDropY = 8.0;
+  static const ballisticShadowAlpha = 0.30;
+  static const ballisticShadowBlurGround = 3.0;
+  static const ballisticShadowBlurAir = 12.0;
+
+  // -- Flick-to-throw -------------------------------------------------------------
+
+  /// Upward release speed (dp/s) at/above which a hand drag becomes a throw.
+  static const flickThrowSpeed = 700.0;
+
+  /// Minimum upward travel (dp) before a release may throw.
+  static const flickMinDrag = 24.0;
+
+  /// Clamp of the handed-off flick launch speed (dp/s).
+  static const flickLaunchSpeedMin = 900.0;
+  static const flickLaunchSpeedMax = 2600.0;
+
+  /// Per-card aim spread (degrees) when several cards share one flick.
+  static const flickSpreadDeg = 4.0;
+
+  /// How long a published flick velocity stays valid while the throw makes
+  /// its server roundtrip.
+  static const flickHandoffWindow = Duration(milliseconds: 3500);
+
+  /// Slop (dp) around the hand rect when matching a departing flight to the
+  /// pending flick.
+  static const flickSourceSlop = 32.0;
+
+  /// Drag-follow feel: lead-card follow fraction, per-card lag among the
+  /// selection (and its floor), horizontal follow, downward rubber-band,
+  /// tilt toward the drag direction, and the airborne lift scale.
+  static const flickFollow = 0.9;
+  static const flickFollowLagPerCard = 0.11;
+  static const flickFollowFloor = 0.4;
+  static const flickFollowDx = 0.6;
+  static const flickDownRubberBand = 0.25;
+  static const flickMaxDown = 14.0; // dp below the fan
+  static const flickTiltPerDx = 0.004; // rad per dp of horizontal drift
+  static const flickTiltLagBoost = 0.3; // trailing cards tilt a touch more
+  static const flickMaxTilt = 0.24; // rad
+  static const flickLiftScale = 0.05;
+  static const flickLiftDistance = 70.0; // dp of upward drag for full lift
+
+  /// Spring-back to the fan after a sub-threshold release.
+  static const flickSpringBack = Duration(milliseconds: 240);
+  static const flickSpringBackCurve = Curves.easeOutBack;
+
+  // -- Pile nudge (landing impulse) -------------------------------------------------
+
+  /// A landing card physically nudges the top resting pile cards.
+  static const pileNudge = Duration(milliseconds: 250);
+  static const pileNudgeCards = 3;
+  static const pileNudgeMaxOffset = 2.6; // dp, top card
+  static const pileNudgeMaxAngleDeg = 1.2; // degrees, top card
+  /// Amplitude falloff per card deeper in the stack.
+  static const pileNudgeFalloff = 0.55;
+  /// Cosine cycles of the damped wiggle across the nudge window.
+  static const pileNudgeWiggle = 1.4;
+}
+
+/// Table-lane motion constants (environment + set-piece restage). A separate
+/// namespace so concurrent additions to [MotionSpec] can never collide.
+abstract final class TableMotionSpec {
+  // -- Felt candlelight (idle life of the table light pool) --------------------
+
+  /// One full warm-flicker cycle of the light pool.
+  static const feltFlickerPeriod = Duration(seconds: 7);
+
+  /// Radius modulation of the light pool (fraction of the base radius).
+  static const feltFlickerRadiusDelta = 0.02;
+
+  /// Center drift of the light pool, in alignment units.
+  static const feltFlickerDriftAmp = 0.03;
+
+  // -- Reveal restage -----------------------------------------------------------
+
+  /// Peak opacity of the deepened reveal dim (was a lighter vignette).
+  static const revealDimDeep = 0.55;
+
+  /// Peak alpha of the candle-spot behind the flipped card.
+  static const revealSpotMaxAlpha = 0.22;
+
+  /// Portion of the verdict phase spent flashing the ink splat in.
+  static const inkSplatIn = 0.30;
+
+  // -- Claim plaque slam ----------------------------------------------------------
+
+  /// The plaque starts this much larger and slams down to 1.0.
+  static const calloutSlamScale = 1.45;
+
+  // -- Quad celebration -------------------------------------------------------------
+
+  /// Brass glint particles twinkling around the framed square.
+  static const quadGlintCount = 14;
+
+  // -- Game-over theater bow ----------------------------------------------------
+
+  static const gameOverBowStart = 0.55; // fraction of the step
+  static const gameOverBowEnd = 0.88;
+  static const gameOverBowDip = 0.26; // rad, deepest tilt of the bow
+  static const gameOverBowRest = 0.10; // rad, the tilt it settles into
+
+  // -- Emoji burst ring pop --------------------------------------------------------
+
+  static const emojiRingPopLife = Duration(milliseconds: 380);
+  static const emojiRingPopRadius = 30.0; // dp, final ring radius
 }
 
 /// The reveal flip's "slow peel" curve: linger over the first

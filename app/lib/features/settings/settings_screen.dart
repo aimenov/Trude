@@ -7,7 +7,9 @@ import '../../core/net/meta_providers.dart';
 import '../../core/storage/identity_providers.dart';
 import '../../core/storage/settings_providers.dart';
 import '../../core/strings.dart';
+import '../../core/theme/trude_theme.dart';
 import '../../core/version.dart';
+import '../home/parlor_widgets.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -41,88 +43,148 @@ class SettingsScreen extends ConsumerWidget {
     final speed = ref.watch(animationSpeedChoiceProvider);
     final nickname = ref.watch(identityProvider)?.nickname ?? '';
 
-    return Scaffold(
-      appBar: AppBar(title: Text(Strings.settingsTitle)),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        children: [
-          ListTile(
-            leading: const Icon(Icons.speed),
-            title: Text(Strings.animationSpeedLabel),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: SegmentedButton<AnimationSpeed>(
-                segments: [
-                  ButtonSegment(
-                      value: AnimationSpeed.normal,
-                      label: Text(Strings.speedNormal)),
-                  ButtonSegment(
-                      value: AnimationSpeed.fast,
-                      label: Text(Strings.speedFast)),
-                  ButtonSegment(
-                      value: AnimationSpeed.off,
-                      label: Text(Strings.speedOff)),
-                ],
-                selected: {speed},
-                onSelectionChanged: (v) => ref
-                    .read(animationSpeedChoiceProvider.notifier)
-                    .set(v.single),
-              ),
+    return ParlorBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(Strings.settingsTitle)),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Motion & feedback.
+                ParlorPanel(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.speed,
+                            color: TrudeColors.brassBright),
+                        title: Text(Strings.animationSpeedLabel,
+                            style: _rowTitle),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: SegmentedButton<AnimationSpeed>(
+                            segments: [
+                              ButtonSegment(
+                                  value: AnimationSpeed.normal,
+                                  label: Text(Strings.speedNormal)),
+                              ButtonSegment(
+                                  value: AnimationSpeed.fast,
+                                  label: Text(Strings.speedFast)),
+                              ButtonSegment(
+                                  value: AnimationSpeed.off,
+                                  label: Text(Strings.speedOff)),
+                            ],
+                            selected: {speed},
+                            onSelectionChanged: (v) => ref
+                                .read(animationSpeedChoiceProvider.notifier)
+                                .set(v.single),
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 1, indent: 16, endIndent: 16),
+                      SwitchListTile(
+                        secondary: const Icon(Icons.volume_up,
+                            color: TrudeColors.brassBright),
+                        title: Text(Strings.soundLabel, style: _rowTitle),
+                        value: settings.soundOn,
+                        onChanged: (v) =>
+                            ref.read(settingsProvider.notifier).setSoundOn(v),
+                      ),
+                      SwitchListTile(
+                        secondary: const Icon(Icons.vibration,
+                            color: TrudeColors.brassBright),
+                        title: Text(Strings.hapticsLabel, style: _rowTitle),
+                        value: settings.hapticsOn,
+                        onChanged: (v) => ref
+                            .read(settingsProvider.notifier)
+                            .setHapticsOn(v),
+                      ),
+                    ],
+                  ),
+                ),
+                const EtchedDivider(),
+                // Identity & language.
+                ParlorPanel(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.badge_outlined,
+                            color: TrudeColors.brassBright),
+                        title: Text(Strings.nicknameLabel, style: _rowTitle),
+                        subtitle: Text(
+                          nickname,
+                          style: TrudeType.cardIndex.copyWith(
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: TrudeColors.textMuted,
+                          ),
+                        ),
+                        trailing: const Icon(Icons.edit,
+                            size: 18, color: TrudeColors.brass),
+                        onTap: () => _changeNickname(context, ref),
+                      ),
+                      const Divider(height: 1, indent: 16, endIndent: 16),
+                      ListTile(
+                        leading: const Icon(Icons.language,
+                            color: TrudeColors.brassBright),
+                        title: Text(Strings.languageLabel, style: _rowTitle),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: SegmentedButton<String>(
+                            segments: [
+                              ButtonSegment(
+                                  value: 'system',
+                                  label: Text(Strings.languageSystem)),
+                              ButtonSegment(
+                                  value: 'en',
+                                  label: Text(Strings.languageEnglish)),
+                              ButtonSegment(
+                                  value: 'ru',
+                                  label: Text(Strings.languageRussian)),
+                            ],
+                            selected: {settings.localeCode},
+                            onSelectionChanged: (v) => ref
+                                .read(settingsProvider.notifier)
+                                .setLocaleCode(v.single),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const EtchedDivider(),
+                // About.
+                ParlorPanel(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: ListTile(
+                    leading: const Icon(Icons.info_outline,
+                        color: TrudeColors.brassBright),
+                    title: Text(Strings.aboutLabel, style: _rowTitle),
+                    subtitle: Text(
+                      Strings.versionLabel(kAppVersion),
+                      style: const TextStyle(
+                          fontSize: 12.5, color: TrudeColors.textMuted),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          SwitchListTile(
-            secondary: const Icon(Icons.volume_up),
-            title: Text(Strings.soundLabel),
-            value: settings.soundOn,
-            onChanged: (v) =>
-                ref.read(settingsProvider.notifier).setSoundOn(v),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.vibration),
-            title: Text(Strings.hapticsLabel),
-            value: settings.hapticsOn,
-            onChanged: (v) =>
-                ref.read(settingsProvider.notifier).setHapticsOn(v),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.badge_outlined),
-            title: Text(Strings.nicknameLabel),
-            subtitle: Text(nickname),
-            trailing: const Icon(Icons.edit),
-            onTap: () => _changeNickname(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(Strings.languageLabel),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: SegmentedButton<String>(
-                segments: [
-                  ButtonSegment(
-                      value: 'system', label: Text(Strings.languageSystem)),
-                  ButtonSegment(
-                      value: 'en', label: Text(Strings.languageEnglish)),
-                  ButtonSegment(
-                      value: 'ru', label: Text(Strings.languageRussian)),
-                ],
-                selected: {settings.localeCode},
-                onSelectionChanged: (v) => ref
-                    .read(settingsProvider.notifier)
-                    .setLocaleCode(v.single),
-              ),
-            ),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: Text(Strings.aboutLabel),
-            subtitle: Text(Strings.versionLabel(kAppVersion)),
-          ),
-        ],
+        ),
       ),
     );
   }
+
+  static final _rowTitle = TrudeType.cardIndex.copyWith(
+    fontSize: 15,
+    letterSpacing: 0.3,
+    color: TrudeColors.textPrimary,
+  );
 }
 
 class _NicknameDialog extends StatefulWidget {

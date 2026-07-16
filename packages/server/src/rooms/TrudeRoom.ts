@@ -12,17 +12,31 @@ import type {
   ClientMessageName, EventBatch, ServerErrorCode, StateFull, WireEvent, WirePlayer,
 } from '../protocol.js';
 import type { Store, UnlockedAchievement } from '../store/store.js';
+import { graceForBatch } from './animationGrace.js';
 
 interface SeatInfo {
   userId: string;
   nickname: string;
   avatar: string;
   connected: boolean;
+  /** Epoch ms of the drop; null while connected. */
+  disconnectedSince: number | null;
   autoPilot: boolean;
   consecutiveTimeouts: number;
   lastClientSeq: number;
   lastReactionAt: number;
   client: Client | null;
+}
+
+/** The currently armed turn timer, as broadcast to clients. */
+interface TurnArm {
+  deadlineTs: number;
+  /** Base decision window (ms), excluding animation grace. */
+  durationMs: number;
+  /** Animation grace baked into deadlineTs. */
+  graceMs: number;
+  /** True when the window was cut to disconnectedTurnMs mid-turn or armed short. */
+  shortened: boolean;
 }
 
 interface RoomOptions {
@@ -55,7 +69,8 @@ export class TrudeRoom extends Room {
   private game: GameState | null = null;
   private lastResolution: EventBatch | null = null;
   private timerNonce = 0;
-  private currentDeadlineTs = 0;
+  private shorteningNonce = 0;
+  private turnArm: TurnArm | null = null;
   private allDisconnectedSince: number | null = null;
 
   override async onCreate(options: RoomOptions): Promise<void> {
@@ -105,7 +120,7 @@ export class TrudeRoom extends Room {
     if (this.seats.length === 0) this.adminUserId = claims.sub;
     const seat: SeatInfo = {
       userId: claims.sub, nickname: claims.nick, avatar: claims.avatar,
-      connected: true, autoPilot: false, consecutiveTimeouts: 0,
+      connected: true, disconnectedSince: null, autoPilot: false, consecutiveTimeouts: 0,
       lastClientSeq: -1, lastReactionAt: 0, client,
     };
     this.seats.push(seat);
@@ -131,6 +146,7 @@ export class TrudeRoom extends Room {
         // Quitting mid-game: the seat stays (cards are never redistributed) on
         // permanent autopilot; the shortened timer keeps the game moving.
         seat.connected = false;
+        seat.disconnectedSince = Date.now();
         seat.client = null;
         seat.autoPilot = true;
         this.noteConnectivity();
@@ -138,11 +154,12 @@ export class TrudeRoom extends Room {
           { type: 'playerConnection', seat: seatIdx, connected: false },
           { type: 'autoPilot', seat: seatIdx, on: true },
         ]);
-        this.rearmIfActor(seatIdx);
+        this.shortenActiveTurn(seatIdx);
       } else if (this.phase === 'finished') {
         // Seat indexes must stay aligned with the finished game's state until the
         // room resets; returnToLobby drops disconnected seats.
         seat.connected = false;
+        seat.disconnectedSince = Date.now();
         seat.client = null;
         this.noteConnectivity();
         this.broadcastEvents([{ type: 'playerConnection', seat: seatIdx, connected: false }]);
@@ -153,11 +170,13 @@ export class TrudeRoom extends Room {
     }
 
     seat.connected = false;
+    seat.disconnectedSince = Date.now();
     seat.client = null;
     this.noteConnectivity();
     if (this.phase === 'playing') {
       this.broadcastEvents([{ type: 'playerConnection', seat: seatIdx, connected: false }]);
-      this.rearmIfActor(seatIdx);
+      // Blips shouldn't touch the timer: shorten only if still gone in 5 s.
+      this.scheduleDisconnectShortening(seatIdx);
     }
 
     try {
@@ -165,20 +184,23 @@ export class TrudeRoom extends Room {
         client, this.phase === 'lobby' ? config.reconnectionSecondsLobby : config.reconnectionSeconds,
       );
       seat.connected = true;
+      seat.disconnectedSince = null;
       seat.client = rejoined;
       seat.autoPilot = false;
       seat.consecutiveTimeouts = 0;
       seat.lastClientSeq = -1; // reconnecting clients restart their clientSeq counter
       rejoined.userData = { userId: seat.userId };
       this.noteConnectivity();
-      rejoined.send('stateFull', this.buildStateFull(seat.userId));
       if (this.phase === 'playing') {
         this.broadcastEvents([
           { type: 'playerConnection', seat: seatIdx, connected: true },
           { type: 'autoPilot', seat: seatIdx, on: false },
         ]);
-        this.rearmIfActor(seatIdx);
+        // Give the full window back only if this turn was actually cut short —
+        // a blip is a no-op, and reconnecting never extends an untouched timer.
+        this.restoreActiveTurn(seatIdx);
       }
+      rejoined.send('stateFull', this.buildStateFull(seat.userId));
     } catch {
       // Window expired. Mid-game: the player stays seated on permanent autopilot —
       // cards are never redistributed. Lobby: free the seat.
@@ -269,7 +291,15 @@ export class TrudeRoom extends Room {
     this.game = state;
     this.phase = 'playing';
     this.lastResolution = null;
-    for (const s of this.seats) s.consecutiveTimeouts = 0;
+    for (const s of this.seats) {
+      s.consecutiveTimeouts = 0;
+      // A stale disconnected flag must never leak a shortened first turn into a
+      // fresh game: anyone with a live client is connected by definition.
+      if (s.client) {
+        s.connected = true;
+        s.disconnectedSince = null;
+      }
+    }
     void this.setPrivate(true);
     void this.updateMetadata();
     this.sendHands();
@@ -373,7 +403,7 @@ export class TrudeRoom extends Room {
   /** Turns engine events into wire events, arms the turn timer, handles game over. */
   private broadcastBatch(engineEvents: EngineEvent[]): void {
     if (!this.game) return;
-    const hasResolution = engineEvents.some((e) => e.type === 'checkResult' || e.type === 'fourDiscarded');
+    const graceMs = graceForBatch(engineEvents);
     const wire: WireEvent[] = [];
 
     for (const e of engineEvents) {
@@ -386,8 +416,8 @@ export class TrudeRoom extends Room {
           });
           break;
         case 'turnStarted': {
-          const deadlineTs = this.armTurnTimer(e.seat, hasResolution);
-          wire.push({ type: 'turnStarted', seat: e.seat, phase: e.phase, mustCheck: e.mustCheck, deadlineTs });
+          const { deadlineTs, durationMs } = this.armTurnTimer(e.seat, graceMs);
+          wire.push({ type: 'turnStarted', seat: e.seat, phase: e.phase, mustCheck: e.mustCheck, deadlineTs, durationMs });
           break;
         }
         case 'gameOver': {
@@ -427,44 +457,95 @@ export class TrudeRoom extends Room {
     this.broadcast('events', { actionCount: this.game?.actionCount ?? -1, events } satisfies EventBatch);
   }
 
-  private armTurnTimer(actorSeat: number, afterResolution: boolean): number {
-    this.cancelTimer();
+  /** Arms the decision timer for a fresh turn; graceMs comes from graceForBatch. */
+  private armTurnTimer(actorSeat: number, graceMs: number): { deadlineTs: number; durationMs: number } {
+    this.cancelTimer(); // also invalidates any pending shortening check — the turn advanced
     const seat = this.seats[actorSeat]!;
-    const base = (!seat.connected || seat.autoPilot) ? config.disconnectedTurnMs : this.turnTimerSec * 1000;
-    const grace = afterResolution ? config.animationGraceMs : 0;
-    const deadline = Date.now() + base + grace;
-    this.currentDeadlineTs = deadline;
-    const nonce = ++this.timerNonce;
-    this.clock.setTimeout(() => {
-      if (nonce !== this.timerNonce || this.phase !== 'playing') return;
-      this.applyEngineAction({ type: 'timeout' }, null);
-    }, base + grace);
-    return deadline;
+    const now = Date.now();
+    const goneTooLong = !seat.connected && seat.disconnectedSince !== null
+      && now - seat.disconnectedSince > config.disconnectedGraceMs;
+    const shortened = seat.autoPilot || goneTooLong;
+    const durationMs = shortened ? config.disconnectedTurnMs : this.turnTimerSec * 1000;
+    const deadlineTs = now + durationMs + graceMs;
+    this.turnArm = { deadlineTs, durationMs, graceMs, shortened };
+    this.armTimeout(durationMs + graceMs);
+    // Actor dropped moments ago and may come right back: arm full, watch for 5 s.
+    if (!seat.connected && !shortened) this.scheduleDisconnectShortening(actorSeat);
+    return { deadlineTs, durationMs };
   }
 
-  private cancelTimer(): void {
-    this.timerNonce++;
-  }
-
-  /** Re-arms the running turn timer when the current actor's connectivity changes. */
-  private rearmIfActor(seatIdx: number): void {
-    if (!this.game || this.game.phase.kind === 'over') return;
-    if (this.game.phase.seat !== seatIdx) return;
-    const seat = this.seats[seatIdx]!;
-    const remaining = Math.max(this.currentDeadlineTs - Date.now(), 0);
-    const cap = (!seat.connected || seat.autoPilot) ? config.disconnectedTurnMs : this.turnTimerSec * 1000;
-    const ms = Math.min(remaining, cap);
-    this.currentDeadlineTs = Date.now() + ms;
+  /** (Re)arms the timeout that auto-acts for the current actor. */
+  private armTimeout(ms: number): void {
     const nonce = ++this.timerNonce;
     this.clock.setTimeout(() => {
       if (nonce !== this.timerNonce || this.phase !== 'playing') return;
       this.applyEngineAction({ type: 'timeout' }, null);
     }, ms);
+  }
+
+  private cancelTimer(): void {
+    this.timerNonce++;
+    this.shorteningNonce++;
+    this.turnArm = null;
+  }
+
+  private isActorSeat(seatIdx: number): boolean {
+    return this.game !== null && this.game.phase.kind !== 'over' && this.game.phase.seat === seatIdx;
+  }
+
+  /** Cuts the running turn to the disconnected window (consented quit, or a drop
+   *  that outlived the disconnect grace). Never extends; no-op if already short. */
+  private shortenActiveTurn(seatIdx: number): void {
+    if (!this.isActorSeat(seatIdx) || !this.turnArm || this.turnArm.shortened) return;
+    const remaining = Math.max(this.turnArm.deadlineTs - Date.now(), 0);
+    const ms = Math.min(remaining, config.disconnectedTurnMs);
+    this.turnArm = {
+      deadlineTs: Date.now() + ms, durationMs: config.disconnectedTurnMs, graceMs: 0, shortened: true,
+    };
+    this.armTimeout(ms);
+    if (process.env['TRUDE_DEBUG']) console.log('[room] shorten turn', seatIdx, 'to', ms, 'ms');
+    this.broadcastTurnDeadline(seatIdx);
+  }
+
+  /** A non-consented drop: shorten only if the actor is still gone in 5 s, so
+   *  transient socket blips never touch the timer. Nonce-guarded — invalidated
+   *  by cancelTimer/armTurnTimer whenever the turn advances. */
+  private scheduleDisconnectShortening(seatIdx: number): void {
+    const seat = this.seats[seatIdx];
+    if (!seat || seat.connected || seat.disconnectedSince === null) return;
+    if (!this.isActorSeat(seatIdx)) return;
+    const delay = Math.max(seat.disconnectedSince + config.disconnectedGraceMs - Date.now(), 0);
+    const nonce = ++this.shorteningNonce;
+    if (process.env['TRUDE_DEBUG']) console.log('[room] disconnect shortening check for seat', seatIdx, 'in', delay, 'ms');
+    this.clock.setTimeout(() => {
+      if (nonce !== this.shorteningNonce || this.phase !== 'playing') return;
+      const s = this.seats[seatIdx];
+      if (!s || s.connected) return; // came back within grace — leave the timer alone
+      this.shortenActiveTurn(seatIdx);
+    }, delay);
+  }
+
+  /** Reconnect: give the full base window back ONLY if this turn was shortened.
+   *  An untouched timer stays untouched (blips are no-ops; reconnecting can
+   *  never be exploited to reset a running turn). */
+  private restoreActiveTurn(seatIdx: number): void {
+    if (!this.isActorSeat(seatIdx) || !this.turnArm?.shortened) return;
+    const durationMs = this.turnTimerSec * 1000;
+    this.turnArm = { deadlineTs: Date.now() + durationMs, durationMs, graceMs: 0, shortened: false };
+    this.armTimeout(durationMs);
+    if (process.env['TRUDE_DEBUG']) console.log('[room] restore turn', seatIdx, 'to', durationMs, 'ms');
+    this.broadcastTurnDeadline(seatIdx);
+  }
+
+  /** Synthetic turnStarted re-broadcast carrying the CURRENT deadline + base window. */
+  private broadcastTurnDeadline(seatIdx: number): void {
+    if (!this.game || this.game.phase.kind === 'over' || !this.turnArm) return;
     this.broadcastEvents([{
       type: 'turnStarted', seat: seatIdx,
       phase: this.game.phase.kind as 'lead' | 'respond',
       mustCheck: this.game.phase.kind === 'respond' && this.game.phase.mustCheck,
-      deadlineTs: this.currentDeadlineTs,
+      deadlineTs: this.turnArm.deadlineTs,
+      durationMs: this.turnArm.durationMs,
     }]);
   }
 
@@ -529,7 +610,11 @@ export class TrudeRoom extends Room {
       mustCheck: view?.mustCheck ?? false,
       retiredRanks: view?.retiredRanks ?? [],
       discarded: view?.discarded ?? [],
-      turn: view?.turn ? { ...view.turn, deadlineTs: this.currentDeadlineTs } : null,
+      turn: view?.turn ? {
+        ...view.turn,
+        deadlineTs: this.turnArm?.deadlineTs ?? 0,
+        durationMs: this.turnArm?.durationMs ?? this.turnTimerSec * 1000,
+      } : null,
       hand: view?.hand ?? [],
       lastResolution: this.lastResolution,
       loserSeat: view?.loserSeat ?? null,

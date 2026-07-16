@@ -273,12 +273,16 @@ class TrudeRoom {
     });
   }
 
-  void throwCards(List<String> cardIds,
+  /// Returns the `clientSeq` stamped onto the action, so callers can key an
+  /// optimistic hold on it (released on rejection / superseded by resync).
+  int throwCards(List<String> cardIds,
       {String? rank, int? actionCount, int? clientSeq}) {
+    final seq = clientSeq ?? _clientSeq++;
     _sendAction('throwCards', {
       'cardIds': cardIds,
       'rank': ?rank,
-    }, actionCountOverride: actionCount, clientSeq: clientSeq);
+    }, actionCountOverride: actionCount, clientSeq: seq);
+    return seq;
   }
 
   void check(int flipIndex, {int? actionCount, int? clientSeq}) {

@@ -42,6 +42,12 @@ class MotionJitter {
   /// and particle bursts.
   double range(double min, double max) => min + _rng.nextDouble() * (max - min);
 
+  /// [base] scaled by ±[spread] (fraction of base) — launch speeds and spins.
+  double vary(double base, double spread) => base * (1 + _signed() * spread);
+
+  /// Uniform sample in [-maxAbs, maxAbs] — aim angles and idle tumbles.
+  double signed(double maxAbs) => _signed() * maxAbs;
+
   int intRange(int min, int maxInclusive) =>
       min + _rng.nextInt(maxInclusive - min + 1);
 }

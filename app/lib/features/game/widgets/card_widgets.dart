@@ -1,6 +1,7 @@
 /// Card visuals: face-down backs (with the idle gloss shimmer) and faces.
-/// Pure widgets — real card art is a later asset milestone; these render a
-/// patterned back and rank/suit typography that the art can drop into.
+/// The art itself is painter-drawn ("Midnight Parlor" deck, see
+/// card_painters.dart): engraved pips, court medallions, the joker, and a
+/// brass guilloche back — no image assets, crisp at any width.
 library;
 
 import 'dart:math';
@@ -8,8 +9,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../core/strings.dart';
+import '../../../core/theme/trude_theme.dart';
 import '../anim/motion_jitter.dart';
 import '../anim/motion_spec.dart';
+import 'card_painters.dart';
 
 const kCardAspect = 68 / 48; // height / width of every card widget
 
@@ -23,18 +26,13 @@ class TrudeCardBack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(width * TrudeDims.cardRadiusFactor);
     final card = Container(
       width: width,
       height: width * kCardAspect,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [scheme.primary, scheme.primaryContainer],
-        ),
-        borderRadius: BorderRadius.circular(width * 0.13),
-        border: Border.all(color: scheme.onPrimary.withValues(alpha: 0.55)),
+        color: TrudeColors.ivory,
+        borderRadius: radius,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.25),
@@ -43,10 +41,13 @@ class TrudeCardBack extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Icon(Icons.filter_vintage,
-            size: width * 0.45,
-            color: scheme.onPrimary.withValues(alpha: 0.6)),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: const CustomPaint(
+          painter: CardBackPainter(),
+          isComplex: true,
+          willChange: false,
+        ),
       ),
     );
     if (!shimmer) return card;
@@ -131,60 +132,51 @@ class TrudeCardFace extends StatelessWidget {
   final String rank;
   final String? suit;
   final double width;
+
+  /// Brass outer glow + a slightly stronger lift shadow (geometry unchanged).
   final bool selected;
 
   /// Four-of-a-kind celebration styling.
   final bool golden;
 
   bool get _isJoker => rank == 'JOKER';
-  bool get _isRed => suit == 'H' || suit == 'D';
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final ink = _isJoker
-        ? Colors.deepPurple
-        : (_isRed ? const Color(0xFFC62828) : const Color(0xFF263238));
-    final label = _isJoker ? Strings.jokerShort : Strings.rankShort(rank);
-    final suitSymbol = Strings.suitSymbols[suit] ?? '';
+    final radius = BorderRadius.circular(width * TrudeDims.cardRadiusFactor);
     return Container(
       width: width,
       height: width * kCardAspect,
       decoration: BoxDecoration(
-        color: golden ? const Color(0xFFFFF8E1) : Colors.white,
-        borderRadius: BorderRadius.circular(width * 0.13),
-        border: Border.all(
-          color: selected
-              ? scheme.primary
-              : (golden ? const Color(0xFFFFB300) : Colors.black26),
-          width: selected || golden ? 2 : 1,
-        ),
+        color: TrudeColors.ivory,
+        borderRadius: radius,
         boxShadow: [
+          if (selected)
+            BoxShadow(
+              color: TrudeColors.brass.withValues(alpha: 0.55),
+              blurRadius: width * 0.30,
+              spreadRadius: 1,
+            ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: selected ? 0.3 : 0.18),
-            blurRadius: selected ? 5 : 3,
-            offset: const Offset(0, 1.5),
+            color: Colors.black.withValues(alpha: selected ? 0.32 : 0.18),
+            blurRadius: selected ? 6 : 3,
+            offset: Offset(0, selected ? 2.5 : 1.5),
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: ink,
-              fontSize: width * (_isJoker ? 0.42 : 0.34),
-              fontWeight: FontWeight.w800,
-              height: 1.0,
-            ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: CustomPaint(
+          painter: CardFacePainter(
+            rank: rank,
+            suit: suit,
+            indexLabel: _isJoker ? '' : Strings.rankShort(rank),
+            jokerWord: _isJoker ? Strings.rankWord(rank) : '',
+            golden: golden,
           ),
-          if (suitSymbol.isNotEmpty)
-            Text(
-              suitSymbol,
-              style: TextStyle(color: ink, fontSize: width * 0.30, height: 1.1),
-            ),
-        ],
+          isComplex: true,
+          willChange: false,
+        ),
       ),
     );
   }

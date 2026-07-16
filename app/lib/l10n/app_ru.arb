@@ -61,7 +61,7 @@
   "throwButton": "Бросить",
   "claimRankLabel": "Что кладёшь",
   "tapCardToFlip": "Коснись карты, чтобы открыть её",
-  "yourTurnLead": "Твой ход — заходи",
+  "yourTurnLead": "Твой ход — ходи",
   "yourTurnRespond": "Твой ход — веришь или нет?",
   "selectCardsHint": "Выбери до 3 карт",
   "pileCount": "В стопке: {n}",

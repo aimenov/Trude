@@ -6,11 +6,13 @@ library;
 
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/audio/sfx_service.dart';
+import '../../../core/theme/trude_theme.dart';
 import '../../../core/haptics/haptics_service.dart';
 import '../../../core/motion/animation_speed.dart';
 import '../../../core/net/connection_providers.dart';
@@ -246,7 +248,7 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
       seat: event.seat,
       mySeat: started.before.mySeat,
       text: Strings.safeCallout,
-      color: const Color(0xFF2E7D32),
+      color: TrudeColors.truth,
     );
   }
 
@@ -371,4 +373,285 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
       ],
     );
   }
+}
+
+// =============================================================================
+// The parlor environment: full-bleed candle-lit felt behind the whole table.
+// =============================================================================
+
+/// Full-bleed felt with candlelight idle life: the warm light pool's center
+/// drifts and its radius breathes (±2 %, ~7 s period, [TableMotionSpec]).
+/// Everything static — procedural felt grain, the vignette to midnight, the
+/// mahogany rail framing the play area, and the etched TRUDE monogram — is
+/// recorded once per size into a [ui.Picture] and replayed each frame, so the
+/// flicker only repaints two gradients.
+class TableFeltBackground extends StatefulWidget {
+  const TableFeltBackground({super.key, required this.speed});
+
+  final AnimationSpeed speed;
+
+  @override
+  State<TableFeltBackground> createState() => _TableFeltBackgroundState();
+}
+
+class _TableFeltBackgroundState extends State<TableFeltBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _flicker = AnimationController(
+      vsync: this, duration: TableMotionSpec.feltFlickerPeriod);
+  final _layers = _FeltStaticLayers();
+
+  @override
+  void initState() {
+    super.initState();
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(TableFeltBackground old) {
+    super.didUpdateWidget(old);
+    if (old.speed != widget.speed) _syncTicker();
+  }
+
+  void _syncTicker() {
+    if (widget.speed.isOff) {
+      _flicker.stop();
+    } else if (!_flicker.isAnimating) {
+      _flicker.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _flicker.dispose();
+    _layers.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _flicker,
+        builder: (context, _) => CustomPaint(
+          isComplex: true,
+          painter: _FeltPainter(phase: _flicker.value, layers: _layers),
+          size: Size.infinite,
+        ),
+      ),
+    );
+  }
+}
+
+/// One-time recording of the felt's static layers (grain, monogram, vignette,
+/// rail), invalidated only when the canvas size changes.
+class _FeltStaticLayers {
+  ui.Picture? _picture;
+  Size? _size;
+
+  ui.Picture layersFor(Size size) {
+    final cached = _picture;
+    if (cached != null && _size == size) return cached;
+    _picture?.dispose();
+    final recorder = ui.PictureRecorder();
+    _record(Canvas(recorder), size);
+    final picture = recorder.endRecording();
+    _picture = picture;
+    _size = size;
+    return picture;
+  }
+
+  void dispose() {
+    _picture?.dispose();
+    _picture = null;
+  }
+
+  void _record(Canvas canvas, Size size) {
+    _paintGrain(canvas, size);
+    _paintMonogram(canvas, size);
+    _paintVignette(canvas, size);
+    _paintRail(canvas, size);
+  }
+
+  /// Cheap seeded felt texture: dark specks and pale fibers, sparse enough to
+  /// read as nap rather than noise.
+  void _paintGrain(Canvas canvas, Size size) {
+    final rng = Random(1907); // deterministic — recorded once
+    final count = min(1800, (size.width * size.height) ~/ 420);
+    for (var i = 0; i < count; i++) {
+      final pos = Offset(
+          rng.nextDouble() * size.width, rng.nextDouble() * size.height);
+      if (rng.nextDouble() < 0.6) {
+        final speck = Paint()
+          ..color = TrudeColors.midnight
+              .withValues(alpha: 0.03 + rng.nextDouble() * 0.04);
+        canvas.drawCircle(pos, 0.4 + rng.nextDouble() * 0.8, speck);
+      } else {
+        // A short fiber lying in a random direction.
+        final angle = rng.nextDouble() * pi;
+        final len = 2.5 + rng.nextDouble() * 4;
+        final fiber = Paint()
+          ..strokeWidth = 0.6
+          ..color = TrudeColors.ivory
+              .withValues(alpha: 0.015 + rng.nextDouble() * 0.02);
+        canvas.drawLine(
+            pos, pos + Offset(cos(angle), sin(angle)) * len, fiber);
+      }
+    }
+  }
+
+  /// A faint "TRUDE" etched into the felt under the pile, ringed like an
+  /// engraving on the cloth.
+  void _paintMonogram(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.42);
+    final fontSize = size.width * 0.15;
+
+    // Recess shadow first, then the brass etch on top.
+    for (final (color, dy) in [
+      (TrudeColors.midnight.withValues(alpha: 0.10), 1.5),
+      (TrudeColors.brass.withValues(alpha: 0.06), 0.0),
+    ]) {
+      final tp = TextPainter(
+        text: TextSpan(
+          text: 'TRUDE',
+          style: TrudeType.display.copyWith(
+            fontSize: fontSize,
+            color: color,
+            letterSpacing: size.width * 0.02,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(
+          canvas,
+          center -
+              Offset(tp.width / 2 - size.width * 0.01, tp.height / 2 - dy));
+    }
+
+    // Etched halo ellipse around the word.
+    final halo = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = TrudeColors.brass.withValues(alpha: 0.045);
+    canvas.drawOval(
+        Rect.fromCenter(
+            center: center,
+            width: size.width * 0.78,
+            height: fontSize * 2.4),
+        halo);
+  }
+
+  void _paintVignette(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final vignette = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0, -0.15),
+        radius: 1.25,
+        colors: [
+          TrudeColors.midnight.withValues(alpha: 0.0),
+          TrudeColors.midnight.withValues(alpha: 0.0),
+          TrudeColors.midnight.withValues(alpha: 0.65),
+        ],
+        stops: const [0.0, 0.58, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, vignette);
+  }
+
+  /// The mahogany rail hugging the screen edge, with a brass beading hairline
+  /// and an inner contact shadow onto the felt.
+  void _paintRail(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rail = RRect.fromRectAndRadius(
+        rect.deflate(5), const Radius.circular(26));
+
+    // Contact shadow the rail casts onto the felt.
+    final contact = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4)
+      ..color = TrudeColors.midnight.withValues(alpha: 0.45);
+    canvas.drawRRect(rail.deflate(2), contact);
+
+    final wood = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 9
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          TrudeColors.railWoodLit,
+          TrudeColors.railWood,
+          TrudeColors.railWoodLit,
+        ],
+        stops: [0.0, 0.55, 1.0],
+      ).createShader(rect);
+    canvas.drawRRect(rail, wood);
+
+    // Lit top edge of the rail and the brass beading on its inner lip.
+    final edgeLight = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = TrudeColors.railWoodLit.withValues(alpha: 0.8);
+    canvas.drawRRect(rail.inflate(4.5), edgeLight);
+    final beading = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = TrudeDims.hairlineWidth
+      ..color = TrudeColors.brass.withValues(alpha: 0.22);
+    canvas.drawRRect(rail.deflate(5), beading);
+  }
+}
+
+class _FeltPainter extends CustomPainter {
+  _FeltPainter({required this.phase, required this.layers});
+
+  /// 0..1 through one flicker period.
+  final double phase;
+  final _FeltStaticLayers layers;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final a = phase * 2 * pi;
+
+    // Candlelight: layered sinusoids so the drift never reads as a loop.
+    const drift = TableMotionSpec.feltFlickerDriftAmp;
+    final cx = sin(a) * drift + sin(a * 3 + 1.3) * drift * 0.4;
+    final cy = -0.15 + cos(a * 2 + 0.7) * drift * 0.6;
+    final radius = 1.15 *
+        (1 +
+            TableMotionSpec.feltFlickerRadiusDelta *
+                (sin(a * 3 + 0.5) * 0.7 + sin(a * 7 + 2.1) * 0.3));
+
+    // The felt light pool — TrudeGradients.feltLight with an animated
+    // center/radius (same colors and stops).
+    final felt = Paint()
+      ..shader = RadialGradient(
+        center: Alignment(cx, cy),
+        radius: radius,
+        colors: const [
+          TrudeColors.feltLit,
+          TrudeColors.felt,
+          TrudeColors.feltDeep,
+        ],
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, felt);
+
+    // A whisper of candle warmth pooled at the light center.
+    final warmth = Paint()
+      ..shader = RadialGradient(
+        center: Alignment(cx, cy),
+        radius: radius * 0.5,
+        colors: [
+          TrudeColors.brassBright
+              .withValues(alpha: 0.045 + 0.015 * sin(a * 5 + 0.9)),
+          TrudeColors.brassBright.withValues(alpha: 0.0),
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, warmth);
+
+    canvas.drawPicture(layers.layersFor(size));
+  }
+
+  @override
+  bool shouldRepaint(_FeltPainter old) => old.phase != phase;
 }

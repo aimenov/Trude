@@ -17,9 +17,31 @@ export const config = {
   reconnectionSecondsLobby: 30,
   /** Shortened decision timer for disconnected/autopilot players. */
   disconnectedTurnMs: 10_000,
-  /** Grace added to the next deadline after a reveal/pickup batch so the on-screen
-   *  timer starts roughly when the client's animation queue drains. */
-  animationGraceMs: 2_500,
+  /** How long the current actor may stay disconnected before their running turn
+   *  is shortened to disconnectedTurnMs. Blips under this never touch the timer. */
+  disconnectedGraceMs: 5_000,
+  /** Per-event grace (ms) added to the next deadline so the visible timer starts
+   *  roughly when the client's animation queue drains. Mirrors the client
+   *  MotionSpec choreography; combined in rooms/animationGrace.ts. */
+  animationGrace: {
+    /** Opening deal choreography. */
+    dealMs: 2_500,
+    /** Reveal set piece (flip + verdict) before the pickup starts. */
+    checkResultMs: 2_700,
+    /** Pickup flight estimate: base + perCard * min(pickedCount, cardCap), capped. */
+    pickupBaseMs: 550,
+    pickupPerCardMs: 25,
+    pickupCardCap: 24,
+    pickupCapMs: 1_600,
+    /** Quad-discard celebration, per event. */
+    fourDiscardedMs: 1_200,
+    /** "Safe!" flourish, per event. */
+    playerOutMs: 600,
+    /** Settle buffer added once whenever any grace applies. */
+    bufferMs: 250,
+    /** Hard cap for a single batch. */
+    totalCapMs: 8_000,
+  },
   /** Consecutive timeouts before a connected player is flagged autopilot. */
   autopilotAfterTimeouts: 3,
   /** Dispose an all-disconnected mid-game room after this long (ms). */

@@ -1,9 +1,11 @@
-/// Claim callout bubble: "THREE SEVENS!" stamping in from the thrower with a
-/// scale overshoot, holding, then fading. Also reused for the "SAFE!" cheer.
+/// Claim callout plaque: "THREE SEVENS!" as an engraved brass plaque slamming
+/// down beside the thrower with a scale overshoot, holding, then fading.
+/// Also reused for the "SAFE!" cheer (which arrives tinted, e.g. truth green).
 library;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/trude_theme.dart';
 import 'motion_spec.dart';
 
 class ClaimCallout extends StatefulWidget {
@@ -60,19 +62,51 @@ class _ClaimCalloutState extends State<ClaimCallout>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final color = widget.color ?? scheme.inverseSurface;
+    final tint = widget.color;
+
+    // Brass plaque by default; a tinted solid plaque when a color is given
+    // (e.g. truth-green for "SAFE!").
+    final decoration = BoxDecoration(
+      gradient: tint == null ? TrudeGradients.brass : null,
+      color: tint,
+      borderRadius: BorderRadius.circular(TrudeDims.chipRadius),
+      border: Border.all(
+          color: tint == null ? TrudeColors.brassDark : TrudeColors.midnight),
+      boxShadow: [
+        BoxShadow(
+          color: TrudeColors.midnight.withValues(alpha: 0.55),
+          blurRadius: 6,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    );
+    final textStyle = TrudeType.stamp.copyWith(
+      color: tint == null ? TrudeColors.textOnBrass : TrudeColors.textPrimary,
+      fontSize: 14,
+      letterSpacing: 1.4,
+      shadows: tint == null
+          ? [
+              Shadow(
+                color: TrudeColors.brassBright.withValues(alpha: 0.55),
+                offset: const Offset(0, 0.8),
+              ),
+            ]
+          : null,
+    );
 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         final t = _controller.value;
-        final scale = t < _inEnd
+        // Slam: the plaque drops from oversized onto the table with overshoot.
+        final inT = t < _inEnd
             ? MotionSpec.calloutInCurve.transform(t / _inEnd)
             : 1.0;
+        final scale = TableMotionSpec.calloutSlamScale +
+            (1 - TableMotionSpec.calloutSlamScale) * inT;
         final opacity = t > _fadeStart
             ? 1 - (t - _fadeStart) / (1 - _fadeStart)
-            : 1.0;
+            : (t < _inEnd ? (t / _inEnd).clamp(0.0, 1.0) : 1.0);
         return Opacity(
           opacity: opacity.clamp(0.0, 1.0),
           child: Transform.scale(scale: scale, child: child),
@@ -80,24 +114,23 @@ class _ClaimCalloutState extends State<ClaimCallout>
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+        decoration: decoration,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            // Inner engraved hairline of the plaque.
+            border: Border.all(
+              color: (tint == null
+                      ? TrudeColors.textOnBrass
+                      : TrudeColors.midnight)
+                  .withValues(alpha: 0.35),
+              width: TrudeDims.hairlineWidth,
             ),
-          ],
-        ),
-        child: Text(
-          widget.text,
-          style: TextStyle(
-            color: scheme.onInverseSurface,
-            fontWeight: FontWeight.w900,
-            fontSize: 15,
-            letterSpacing: 0.5,
+            borderRadius: BorderRadius.circular(TrudeDims.chipRadius - 4),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(widget.text, style: textStyle),
           ),
         ),
       ),
