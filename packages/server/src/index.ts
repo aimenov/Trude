@@ -20,6 +20,19 @@ export async function createApp(): Promise<{ app: express.Express; gameServer: S
   setStore(store);
 
   const app = express();
+  // Browser clients (Flutter web) call these routes cross-origin. Auth is via
+  // Bearer tokens (no cookies), so a wildcard origin is safe.
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Max-Age', '86400');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+    next();
+  });
   app.use(express.json());
   app.use(authRoutes(store));
 

@@ -324,7 +324,10 @@ class TrudeRoom {
         actionCountOverride: actionCount, clientSeq: clientSeq);
   }
 
-  void ping() => _conn.send('ping', {'t': DateTime.now().millisecondsSinceEpoch});
+  // The timestamp is sent as a double: msgpack_dart encodes ints > 2^32 via
+  // ByteData.setUint64, which throws UnsupportedError under dart2js (web).
+  void ping() =>
+      _conn.send('ping', {'t': DateTime.now().millisecondsSinceEpoch.toDouble()});
 
   /// Consented leave; the server frees the seat (or autopilots it mid-game).
   Future<void> leave() async {
