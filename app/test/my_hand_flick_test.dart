@@ -16,6 +16,7 @@
 // FlickLaunch.peek is non-consuming (TTL expiry only), so the published
 // velocity is asserted directly through the production read path.
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_test/flutter_test.dart';
 
@@ -60,6 +61,35 @@ void _sizeSurface(WidgetTester tester) {
 }
 
 Finder _card(int index) => find.byType(TrudeCardFace).at(index);
+
+/// Drives a mouse-kind drag: button-down at [from], the [moves] deltas
+/// [stepMs] ms apart, an optional stationary [pauseMs] (the mouse settling
+/// before button-up — this is what zeroes the SDK release velocity), then
+/// button-up. Event timestamps advance in lockstep with the pumped clock.
+Future<void> _mouseDrag(
+  WidgetTester tester,
+  Offset from,
+  List<Offset> moves, {
+  int stepMs = 16,
+  int pauseMs = 0,
+}) async {
+  final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+  var t = Duration.zero;
+  await gesture.down(from, timeStamp: t);
+  await tester.pump();
+  for (final move in moves) {
+    t += Duration(milliseconds: stepMs);
+    await gesture.moveBy(move, timeStamp: t);
+    await tester.pump(Duration(milliseconds: stepMs));
+  }
+  if (pauseMs > 0) {
+    t += Duration(milliseconds: pauseMs);
+    await tester.pump(Duration(milliseconds: pauseMs));
+  }
+  await gesture.up(timeStamp: t);
+  await tester.pump();
+  await gesture.removePointer();
+}
 
 void main() {
   setUp(FlickLaunch.clear);
@@ -298,5 +328,113 @@ void main() {
     expect(launch!.dx, lessThan(0));
 
     await tester.pumpAndSettle();
+  });
+
+  // -- Mouse-kind releases ----------------------------------------------------
+  // A mouse settles before button-up: >40ms between the last move and the
+  // release makes the SDK VelocityTracker report DragEndDetails.velocity as
+  // zero, so a velocity-only gate can never fire for a normal mouse throw.
+
+  testWidgets(
+      'mouse: 100dp upward carry, 80ms settle, release still throws '
+      '(regression lock: SDK zeroes the mouse release velocity)',
+      (tester) async {
+    _sizeSurface(tester);
+    var throws = 0;
+    await tester.pumpWidget(_harness(
+      cards: _cards(5),
+      selectedIds: const {'c0', 'c1'},
+      onFlickThrow: () => throws++,
+    ));
+
+    // Drag up 100dp in a few moves, let the mouse rest 80ms, release.
+    await _mouseDrag(
+      tester,
+      tester.getCenter(_card(1)),
+      List.filled(5, const Offset(0, -20)),
+      pauseMs: 80,
+    );
+    expect(throws, 1,
+        reason: 'a deliberate 100dp upward carry must throw even though the '
+            'mouse settled before button-up (SDK velocity is zero then)');
+    expect(FlickLaunch.peek(tester.getRect(find.byType(MyHandView))), isNotNull,
+        reason: 'the carry throw must still publish a launch velocity');
+
+    await tester.pumpAndSettle();
+    expect(throws, 1);
+  });
+
+  testWidgets('mouse: fast upward drag released mid-motion throws',
+      (tester) async {
+    _sizeSurface(tester);
+    var throws = 0;
+    await tester.pumpWidget(_harness(
+      cards: _cards(5),
+      selectedIds: const {'c0', 'c1'},
+      onFlickThrow: () => throws++,
+    ));
+
+    // ~1500 dp/s upward, button released immediately after the last move.
+    await _mouseDrag(
+      tester,
+      tester.getCenter(_card(1)),
+      List.filled(5, const Offset(0, -24)),
+    );
+    expect(throws, 1);
+
+    await tester.pumpAndSettle();
+    expect(throws, 1);
+  });
+
+  testWidgets('mouse: slow 30dp drag with a settle springs back (no throw)',
+      (tester) async {
+    _sizeSurface(tester);
+    var throws = 0;
+    await tester.pumpWidget(_harness(
+      cards: _cards(5),
+      selectedIds: const {'c0'},
+      onFlickThrow: () => throws++,
+    ));
+
+    // ~100 dp/s crawl to 30dp — above the travel gate but far below both the
+    // velocity gates and the deliberate-carry distance.
+    await _mouseDrag(
+      tester,
+      tester.getCenter(_card(0)),
+      List.filled(6, const Offset(0, -5)),
+      stepMs: 48,
+      pauseMs: 80,
+    );
+    expect(throws, 0);
+    expect(FlickLaunch.peek(tester.getRect(find.byType(MyHandView))), isNull);
+
+    await tester.pumpAndSettle();
+    expect(throws, 0);
+  });
+
+  testWidgets('mouse: drag up 100dp then back down near start springs back',
+      (tester) async {
+    _sizeSurface(tester);
+    var throws = 0;
+    await tester.pumpWidget(_harness(
+      cards: _cards(5),
+      selectedIds: const {'c0'},
+      onFlickThrow: () => throws++,
+    ));
+
+    // Up 100dp, then back down to ~5dp above the start: an aborted throw.
+    await _mouseDrag(
+      tester,
+      tester.getCenter(_card(0)),
+      [
+        ...List.filled(5, const Offset(0, -20)),
+        ...List.filled(5, const Offset(0, 19)),
+      ],
+    );
+    expect(throws, 0);
+    expect(FlickLaunch.peek(tester.getRect(find.byType(MyHandView))), isNull);
+
+    await tester.pumpAndSettle();
+    expect(throws, 0);
   });
 }

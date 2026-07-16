@@ -10,10 +10,13 @@
 /// follow the finger — with per-card lag and a tilt toward the drag
 /// direction — and releasing with total speed ≥
 /// [MotionSpec.flickThrowSpeed] and an upward component ≥
-/// [MotionSpec.flickThrowUpComponent] fires the same throw callback as the
-/// THROW button while publishing the release velocity to [FlickLaunch], so
-/// the flight animation launches with the exact flick velocity (clamped). A
-/// sub-threshold release springs the cards back into the fan.
+/// [MotionSpec.flickThrowUpComponent] (per the SDK estimate OR a
+/// self-tracked one immune to the SDK's mouse-settle zeroing), OR after an
+/// upward-dominant carry of ≥ [MotionSpec.flickThrowDistance], fires the
+/// same throw callback as the THROW button while publishing the release
+/// velocity to [FlickLaunch], so the flight animation launches with the
+/// exact flick velocity (clamped). A sub-threshold release springs the
+/// cards back into the fan.
 ///
 /// The flick is ONE strip-level recognizer ([_UpFlickRecognizer]) with
 /// direction-gated acceptance: it claims the pointer only once the movement
@@ -90,6 +93,14 @@ class _MyHandViewState extends State<MyHandView>
   Offset _rawDrag = Offset.zero;
   bool _dragging = false;
 
+  /// Recent (timestamp, delta) drag samples, trimmed to the last
+  /// [MotionSpec.flickRecentWindowMs] — a self-tracked release velocity.
+  /// The SDK's VelocityTracker reports [DragEndDetails.velocity] as ZERO
+  /// whenever >40ms pass between the last pointer move and the release,
+  /// the norm for a mouse (it settles before button-up), so relying on it
+  /// alone made mouse flicks spring back. See [_recentVelocity].
+  final List<(Duration, Offset)> _flickSamples = [];
+
   /// Where the spring-back started from after a sub-threshold release.
   Offset _springFrom = Offset.zero;
   late final AnimationController _spring = AnimationController(
@@ -124,6 +135,7 @@ class _MyHandViewState extends State<MyHandView>
       _dragging = false;
       _rawDrag = Offset.zero;
       _springFrom = Offset.zero;
+      _flickSamples.clear();
     }
   }
 
@@ -175,6 +187,7 @@ class _MyHandViewState extends State<MyHandView>
   void _onFlickStart(DragStartDetails details) {
     if (!_flickEnabled) return;
     _spring.stop();
+    _flickSamples.clear();
     setState(() {
       _dragging = true;
       _rawDrag = Offset.zero;
@@ -183,21 +196,64 @@ class _MyHandViewState extends State<MyHandView>
 
   void _onFlickUpdate(DragUpdateDetails details) {
     if (!_dragging) return;
+    // Sample for the self-tracked release velocity. Event timestamps when
+    // the engine provides them (they also track the fake test clock); the
+    // wall clock is the fallback — both are monotonic within one gesture.
+    final now = details.sourceTimeStamp ??
+        Duration(microseconds: DateTime.now().microsecondsSinceEpoch);
+    _flickSamples.add((now, details.delta));
+    final cutoff =
+        now - const Duration(milliseconds: MotionSpec.flickRecentWindowMs);
+    _flickSamples.removeWhere((s) => s.$1 < cutoff);
     setState(() => _rawDrag += details.delta);
+  }
+
+  /// Release velocity (dp/s) computed from the sampled window: the window's
+  /// travel over its time span. Unlike the SDK estimate, this stays
+  /// meaningful when the pointer is genuinely moving as the button lifts.
+  Offset get _recentVelocity {
+    if (_flickSamples.length < 2) return Offset.zero;
+    final span = _flickSamples.last.$1 - _flickSamples.first.$1;
+    if (span <= Duration.zero) return Offset.zero;
+    var travel = Offset.zero;
+    // The first sample's delta accrued before the window opened: skip it.
+    for (var i = 1; i < _flickSamples.length; i++) {
+      travel += _flickSamples[i].$2;
+    }
+    return travel * (Duration.microsecondsPerSecond / span.inMicroseconds);
   }
 
   void _onFlickEnd(DragEndDetails details) {
     if (!_dragging) return;
-    final velocity = details.velocity.pixelsPerSecond;
-    // Direction-tolerant accept: net upward travel, enough TOTAL release
-    // speed, and an upward component that merely reads as "up" — so diagonal
-    // flicks from the fan's edge cards throw just like vertical ones.
+    final sdkVelocity = details.velocity.pixelsPerSecond;
+    final recentVelocity = _recentVelocity;
+    // Direction-tolerant velocity gate: enough TOTAL release speed and an
+    // upward component that merely reads as "up" — so diagonal flicks from
+    // the fan's edge cards throw just like vertical ones.
+    bool qualifies(Offset v) =>
+        v.distance >= MotionSpec.flickThrowSpeed &&
+        v.dy <= -MotionSpec.flickThrowUpComponent;
+    // Deliberate carry: the cards were dragged well up toward the table,
+    // upward-dominant — a pause before release must NOT cancel the throw
+    // (the SDK zeroes the release velocity after a 40ms still, the norm for
+    // a mouse; "drag-and-drop onto the table" also throws).
+    final carried = _rawDrag.dy <= -MotionSpec.flickThrowDistance &&
+        _rawDrag.dy.abs() >= MotionSpec.flickUpDominance * _rawDrag.dx.abs();
+    // Accept: net upward travel AND (a qualifying release velocity — SDK or
+    // self-tracked — OR the deliberate carry).
     final thrown = _flickEnabled &&
         _rawDrag.dy <= -MotionSpec.flickMinDrag &&
-        velocity.distance >= MotionSpec.flickThrowSpeed &&
-        velocity.dy <= -MotionSpec.flickThrowUpComponent;
+        (qualifies(sdkVelocity) || qualifies(recentVelocity) || carried);
     if (thrown) {
-      _publishFlick(velocity);
+      // Launch with the truest velocity available: the SDK estimate when it
+      // qualified, else the self-tracked one when meaningful, else a synth
+      // along the drag direction (_publishFlick clamps and steers the rest).
+      final launch = qualifies(sdkVelocity)
+          ? sdkVelocity
+          : recentVelocity.distance >= MotionSpec.flickSynthesizeFloor
+              ? recentVelocity
+              : _rawDrag / _rawDrag.distance * MotionSpec.flickLaunchSpeedMin;
+      _publishFlick(launch);
       widget.onFlickThrow?.call();
     }
     _settleBack();

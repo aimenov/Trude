@@ -195,6 +195,22 @@ abstract final class MotionSpec {
   /// Minimum upward travel (dp) before a release may throw.
   static const flickMinDrag = 24.0;
 
+  /// Upward travel (dp) at which an upward-dominant release throws REGARDLESS
+  /// of velocity — the deliberate "carry the cards onto the table" drop. A
+  /// mouse settles before button-up (>40ms still, so the SDK reports zero
+  /// release velocity), and a pause must never cancel a drag that clearly
+  /// reached toward the table.
+  static const flickThrowDistance = 70.0;
+
+  /// Window (ms) of self-tracked drag samples that make up the release
+  /// velocity computed in MyHandView (immune to the SDK's 40ms zeroing).
+  static const flickRecentWindowMs = 120;
+
+  /// Minimum self-tracked release speed (dp/s) worth launching the flight
+  /// with; below it the launch is synthesized along the drag direction at
+  /// [flickLaunchSpeedMin].
+  static const flickSynthesizeFloor = 200.0;
+
   /// Upward-dominance gate of the strip-level flick recognizer's ACCEPTANCE:
   /// the pointer is claimed only while its cumulative movement has dy < 0
   /// and |dy| >= this fraction of |dx|. Shallower (scroll-like) drags are
