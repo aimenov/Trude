@@ -15,6 +15,7 @@ import 'anim/rendered_state.dart';
 import 'anim/table_anchors.dart';
 import 'anim/table_fx_layer.dart';
 import 'logic/rules_view.dart' as rules;
+import 'table_scale.dart';
 import 'widgets/card_widgets.dart';
 import 'widgets/countdown_ring.dart';
 import 'widgets/my_hand.dart';
@@ -178,15 +179,18 @@ class _TableScreenState extends ConsumerState<TableScreen> {
 
   // -- Shared parlor text styles -----------------------------------------------
 
-  /// Small brass-etched section label.
-  TextStyle get _etchedLabel => TrudeType.etched
-      .copyWith(fontSize: 10.5, letterSpacing: 2.2, height: 1.2);
+  /// Small brass-etched section label, scaled by the table [scale]
+  /// (see [tableScale] — 1.0 on phones, up to 1.5 on desktop windows).
+  TextStyle _etchedLabel(double scale) => TrudeType.etched
+      .copyWith(fontSize: 12 * scale, letterSpacing: 2.2, height: 1.2);
 
   /// Small italic serif — hints and disabled-reason lines. The bundled italic
-  /// weight is 700, so hints stay on it.
-  TextStyle get _hintSerif => TrudeType.cardIndex.copyWith(
+  /// weight is 700, so hints stay on it. The center-table event strip passes
+  /// the table scale and gets a larger 14·s size; the bottom action-area
+  /// hints omit it and keep the compact 12.5 base.
+  TextStyle _hintSerif({double? scale}) => TrudeType.cardIndex.copyWith(
         fontStyle: FontStyle.italic,
-        fontSize: 12.5,
+        fontSize: scale == null ? 12.5 : 14 * scale,
         height: 1.35,
         color: TrudeColors.textMuted,
       );
@@ -257,6 +261,9 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     final busy = ref.watch(animationBusyProvider);
     final speed = ref.watch(animationSpeedProvider);
     final view = trueState.toRulesView();
+    // Center-table typography scale, computed once per build: 1.0 on phones,
+    // up to 1.5 on large web/desktop windows (see tableScale).
+    final scale = tableScale(context);
 
     _signalUrgency(trueState);
 
@@ -295,8 +302,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                     children: [
                       _opponentsRow(rendered, speed),
                       _hairlineSeam(),
-                      Expanded(child: _centerArea(rendered, speed)),
-                      _eventStrip(rendered),
+                      Expanded(child: _centerArea(rendered, speed, scale)),
+                      _eventStrip(rendered, scale),
                       _hairlineSeam(),
                       _handArea(trueState, rendered, speed, busy),
                       AbsorbPointer(
@@ -372,12 +379,13 @@ class _TableScreenState extends ConsumerState<TableScreen> {
 
   // -- Center ---------------------------------------------------------------
 
-  Widget _centerArea(ClientGameState state, AnimationSpeed speed) {
+  Widget _centerArea(
+      ClientGameState state, AnimationSpeed speed, double scale) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 6),
-          child: _retiredRail(state),
+          child: _retiredRail(state, scale),
         ),
         Expanded(
           child: Center(
@@ -396,11 +404,11 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(Strings.pileCount(state.pileCount),
-                      style: _etchedLabel),
+                      style: _etchedLabel(scale)),
                   if (state.lastThrowCount > 0 && state.pileRank != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
-                      child: _claimPlaque(state),
+                      child: _claimPlaque(state, scale),
                     ),
                 ],
               ),
@@ -409,26 +417,26 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 6),
-          child: _turnLine(state, speed),
+          child: _turnLine(state, speed, scale),
         ),
       ],
     );
   }
 
   /// The standing claim, engraved into a brass plaque under the pile.
-  Widget _claimPlaque(ClientGameState state) {
+  Widget _claimPlaque(ClientGameState state, double scale) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: _brassPlaque(),
       child: Text(
         '${Strings.lastThrowLabel(state.lastThrowCount)} × '
         '${Strings.rankWord(state.pileRank!)}',
-        style: _engraved(12),
+        style: _engraved(14 * scale),
       ),
     );
   }
 
-  Widget _retiredRail(ClientGameState state) {
+  Widget _retiredRail(ClientGameState state, double scale) {
     return Row(
       key: _anchors.retiredKey,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -437,20 +445,20 @@ class _TableScreenState extends ConsumerState<TableScreen> {
           state.retiredRanks.isEmpty
               ? Strings.noRetiredRanks
               : Strings.retiredRanksLabel(''),
-          style: _etchedLabel,
+          style: _etchedLabel(scale),
         ),
         for (final rank in state.retiredRanks)
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 2),
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
             decoration: _brassPlaque(radius: 7),
-            child: Text(rank, style: _engraved(11)),
+            child: Text(rank, style: _engraved(12 * scale)),
           ),
       ],
     );
   }
 
-  Widget _turnLine(ClientGameState state, AnimationSpeed speed) {
+  Widget _turnLine(ClientGameState state, AnimationSpeed speed, double scale) {
     final turn = state.turn;
     if (turn == null) return const SizedBox.shrink();
     final remaining = _remaining(turn);
@@ -468,6 +476,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         CountdownRing(
           remaining: remaining,
           total: Duration(milliseconds: turn.durationMs),
+          size: 34 * scale,
+          strokeWidth: 4.5 * scale,
           // Urgent-window pulse honors the in-app animation-speed setting.
           animate: !speed.isOff,
         ),
@@ -475,7 +485,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         Text(
           who,
           style: TrudeType.cardIndex.copyWith(
-            fontSize: 15,
+            fontSize: 17 * scale,
             height: 1.2,
             color: TrudeColors.textPrimary,
           ),
@@ -486,14 +496,15 @@ class _TableScreenState extends ConsumerState<TableScreen> {
 
   // -- Event strip -------------------------------------------------------------
 
-  Widget _eventStrip(ClientGameState state) {
+  Widget _eventStrip(ClientGameState state, double scale) {
     final text = state.lastEventText;
     if (text == null) return const SizedBox.shrink();
     return Container(
       width: double.infinity,
       color: TrudeColors.surfaceSunken.withValues(alpha: 0.55),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Text(text, textAlign: TextAlign.center, style: _hintSerif),
+      child: Text(text,
+          textAlign: TextAlign.center, style: _hintSerif(scale: scale)),
     );
   }
 
@@ -569,7 +580,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         child: Text(
           Strings.waitingForOpponent,
           textAlign: TextAlign.center,
-          style: _hintSerif,
+          style: _hintSerif(),
         ),
       );
     } else if (turn.phase == 'lead') {
@@ -633,7 +644,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
               child: Text(
                 Strings.mustCheckReason,
                 textAlign: TextAlign.center,
-                style: _hintSerif,
+                style: _hintSerif(),
               ),
             ),
         ],
@@ -648,7 +659,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(Strings.tapCardToFlip, style: _hintSerif),
+          Text(Strings.tapCardToFlip, style: _hintSerif()),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -721,7 +732,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(Strings.selectCardsHint,
-              textAlign: TextAlign.center, style: _hintSerif),
+              textAlign: TextAlign.center, style: _hintSerif()),
           const SizedBox(height: 6),
           if (leading) ...[
             RankStrip(

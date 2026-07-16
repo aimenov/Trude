@@ -186,6 +186,12 @@ abstract final class MotionSpec {
   /// Upward release speed (dp/s) at/above which a hand drag becomes a throw.
   static const flickThrowSpeed = 700.0;
 
+  /// Minimum upward velocity COMPONENT (dp/s) of an accepted flick release.
+  /// The total-speed gate is [flickThrowSpeed]; this only rejects releases
+  /// that do not read as upward at all, so diagonal flicks (natural from the
+  /// fan's edge cards toward the pile) still throw.
+  static const flickThrowUpComponent = 250.0;
+
   /// Minimum upward travel (dp) before a release may throw.
   static const flickMinDrag = 24.0;
 

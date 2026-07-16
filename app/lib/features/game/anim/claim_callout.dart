@@ -6,6 +6,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/trude_theme.dart';
+import '../table_scale.dart';
 import 'motion_spec.dart';
 
 class ClaimCallout extends StatefulWidget {
@@ -82,7 +83,9 @@ class _ClaimCalloutState extends State<ClaimCallout>
     );
     final textStyle = TrudeType.stamp.copyWith(
       color: tint == null ? TrudeColors.textOnBrass : TrudeColors.textPrimary,
-      fontSize: 14,
+      // Scaled with the center-table typography: 16 on phones, up to 24 on
+      // large desktop windows.
+      fontSize: 16 * tableScale(context),
       letterSpacing: 1.4,
       shadows: tint == null
           ? [

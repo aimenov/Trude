@@ -15,6 +15,7 @@ import '../../../core/haptics/haptics_service.dart';
 import '../../../core/net/protocol_models.dart';
 import '../../../core/strings.dart';
 import '../../../core/theme/trude_theme.dart';
+import '../table_scale.dart';
 import '../widgets/card_widgets.dart';
 import 'motion_spec.dart';
 
@@ -261,7 +262,9 @@ class _RevealOverlayState extends State<RevealOverlay>
                 matched ? Strings.verdictTruth : Strings.verdictLiar,
                 style: TrudeType.stamp.copyWith(
                   color: color.withValues(alpha: 0.92),
-                  fontSize: 28,
+                  // Scaled with the center-table typography: 32 on phones,
+                  // up to 48 on large desktop windows.
+                  fontSize: 32 * tableScale(context),
                 ),
               ),
             ),

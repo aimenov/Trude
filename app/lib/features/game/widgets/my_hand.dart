@@ -4,23 +4,28 @@
 /// my turn.
 ///
 /// FLICK-TO-THROW: with cards selected and a throw armed
-/// ([MyHandView.onFlickThrow] non-null), dragging a SELECTED card upward
-/// makes the whole selection follow the finger — with per-card lag and a
-/// tilt toward the drag direction — and releasing with upward velocity ≥
-/// [MotionSpec.flickThrowSpeed] fires the same throw callback as the THROW
-/// button while publishing the release velocity to [FlickLaunch], so the
-/// flight animation launches with the exact flick velocity (clamped). A
+/// ([MyHandView.onFlickThrow] non-null), dragging a SELECTED card upward (in
+/// any natural direction — diagonals toward the pile included) makes the
+/// whole selection follow the finger — with per-card lag and a tilt toward
+/// the drag direction — and releasing with total speed ≥
+/// [MotionSpec.flickThrowSpeed] and an upward component ≥
+/// [MotionSpec.flickThrowUpComponent] fires the same throw callback as the
+/// THROW button while publishing the release velocity to [FlickLaunch], so
+/// the flight animation launches with the exact flick velocity (clamped). A
 /// sub-threshold release springs the cards back into the fan.
 ///
-/// The drag recognizer lives ONLY on selected cards: taps on unselected
+/// The pan recognizer lives ONLY on selected cards: taps on unselected
 /// cards never compete with a drag arena, so slightly-draggy taps select
-/// reliably. Tap-to-select, the fan scroll, and the urgency shiver are
-/// untouched.
+/// reliably. When the fan fits the window it renders as a centered
+/// non-scrollable Row (no scroll recognizer competes with the flick at all);
+/// only an overflowing hand falls back to the horizontal ListView.
+/// Tap-to-select and the urgency shiver are untouched.
 library;
 
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 
 import '../../../core/motion/animation_speed.dart';
@@ -180,9 +185,13 @@ class _MyHandViewState extends State<MyHandView>
   void _onFlickEnd(DragEndDetails details) {
     if (!_dragging) return;
     final velocity = details.velocity.pixelsPerSecond;
+    // Direction-tolerant accept: net upward travel, enough TOTAL release
+    // speed, and an upward component that merely reads as "up" — so diagonal
+    // flicks from the fan's edge cards throw just like vertical ones.
     final thrown = _flickEnabled &&
         _rawDrag.dy <= -MotionSpec.flickMinDrag &&
-        velocity.dy <= -MotionSpec.flickThrowSpeed;
+        velocity.distance >= MotionSpec.flickThrowSpeed &&
+        velocity.dy <= -MotionSpec.flickThrowUpComponent;
     if (thrown) {
       _publishFlick(velocity);
       widget.onFlickThrow?.call();
@@ -216,7 +225,9 @@ class _MyHandViewState extends State<MyHandView>
     var dir = velocity.distance < 1
         ? const Offset(0, -1)
         : velocity / velocity.distance;
-    if (dir.dy > -0.2) dir = const Offset(0, -1); // must read as upward
+    // Keep the true (diagonal) direction whenever it reads as upward at all;
+    // the ballistic flight steers to the pile anyway, so this is cosmetic.
+    if (dir.dy > -0.15) dir = const Offset(0, -1);
     final box = context.findRenderObject();
     if (box is! RenderBox || !box.attached || !box.hasSize) return;
     final rect = MatrixUtils.transformRect(
@@ -234,13 +245,38 @@ class _MyHandViewState extends State<MyHandView>
     // arena to a drag.
     return SizedBox(
       height: w * kCardAspect + 14,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        // Dragged cards may ride above the hand strip.
-        clipBehavior: Clip.none,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        itemCount: widget.cards.length,
-        itemBuilder: (context, i) => _handCard(widget.cards[i], i, w),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Natural width of the fan: per-card footprint (card + 3+3 dp of
+          // padding) plus the strip's 10+10 dp edge padding.
+          final naturalWidth = widget.cards.length * (w + 6) + 20;
+          if (naturalWidth <= constraints.maxWidth) {
+            // The fan fits: render a centered, non-scrollable Row — no
+            // horizontal drag recognizer exists at all, so nothing competes
+            // with the flick pan, and the fan is centered on wide windows.
+            // crossAxisAlignment.stretch reproduces the ListView's tight
+            // cross-axis constraints, so per-card geometry is identical on
+            // both paths. Row never clips, so the selection lift/glow may
+            // ride above the strip exactly as with Clip.none.
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < widget.cards.length; i++)
+                  _handCard(widget.cards[i], i, w),
+              ],
+            );
+          }
+          // Overflow: fall back to the scrollable strip.
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            // Dragged cards may ride above the hand strip.
+            clipBehavior: Clip.none,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            itemCount: widget.cards.length,
+            itemBuilder: (context, i) => _handCard(widget.cards[i], i, w),
+          );
+        },
       ),
     );
   }
@@ -324,19 +360,55 @@ class _MyHandViewState extends State<MyHandView>
       );
     }
 
-    // The vertical-drag (flick) recognizer exists only on SELECTED cards
-    // while a flick is armed. The drag state is shared across the whole
-    // widget, so dragging any selected card moves the entire selection
-    // together; unselected cards carry a lone tap recognizer — nothing
-    // competes with (or delays) selection taps.
+    // The pan (flick) recognizer exists only on SELECTED cards while a flick
+    // is armed. Pan (not vertical drag): its total-distance slop crosses no
+    // later than an axis recognizer's projected distance for any drag, and
+    // on ties the innermost (per-card) detector wins the arena — so diagonal
+    // flicks reach the flick logic even on the overflow-ListView path (see
+    // [_FlickPanRecognizer] for the slop that makes this hold). Accepted
+    // tradeoff: a scroll-drag that STARTS on a selected card is captured by
+    // the flick and springs back; scrolling from unselected cards still
+    // works. The drag state is shared across the whole widget, so dragging
+    // any selected card moves the entire selection together; unselected
+    // cards carry a lone tap recognizer — nothing competes with (or delays)
+    // selection taps.
     final flickHere = _flickEnabled && selected;
-    return GestureDetector(
+    Widget detector = GestureDetector(
       onTap: widget.selectable ? () => widget.onToggle(card, !selected) : null,
-      onVerticalDragStart: flickHere ? _onFlickStart : null,
-      onVerticalDragUpdate: flickHere ? _onFlickUpdate : null,
-      onVerticalDragEnd: flickHere ? _onFlickEnd : null,
-      onVerticalDragCancel: flickHere ? _onFlickCancel : null,
       child: child,
     );
+    if (flickHere) {
+      detector = RawGestureDetector(
+        gestures: {
+          _FlickPanRecognizer:
+              GestureRecognizerFactoryWithHandlers<_FlickPanRecognizer>(
+            _FlickPanRecognizer.new,
+            (r) => r
+              ..onStart = _onFlickStart
+              ..onUpdate = _onFlickUpdate
+              ..onEnd = _onFlickEnd
+              ..onCancel = _onFlickCancel,
+          ),
+        },
+        child: detector,
+      );
+    }
+    return detector;
   }
+}
+
+/// A [PanGestureRecognizer] that accepts on the tighter axis (hit-test) slop
+/// instead of [computePanSlop] (2x). With the stock pan slop, the hand
+/// ListView's horizontal recognizer reaches ITS slop first for any drag
+/// shallower than ~60 degrees from horizontal and swallows the flick — the
+/// exact "side cards can't be thrown" bug, resurfacing only when the hand
+/// overflows. With hit slop, the pan's total distance crosses no later than
+/// any axis projection, and on same-event ties the innermost (per-card)
+/// member wins the arena, so a flick in ANY direction beats the scroll.
+class _FlickPanRecognizer extends PanGestureRecognizer {
+  @override
+  bool hasSufficientGlobalDistanceToAccept(
+          PointerDeviceKind pointerDeviceKind, double? deviceTouchSlop) =>
+      globalDistanceMoved.abs() >
+      computeHitSlop(pointerDeviceKind, gestureSettings);
 }
