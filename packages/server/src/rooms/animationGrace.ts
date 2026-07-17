@@ -23,7 +23,7 @@ export function graceForBatch(events: readonly EngineEvent[]): number {
           g.pickupBaseMs + g.pickupPerCardMs * Math.min(e.pickedCount, g.pickupCardCap),
           g.pickupCapMs,
         );
-        total += g.checkResultMs + pickup;
+        total += g.checkResultMs + pickup + g.checkHoldMs;
         break;
       }
       case 'fourDiscarded':

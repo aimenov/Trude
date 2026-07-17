@@ -13,7 +13,10 @@
 ///   cosmetic interpolations (a count chip ticking per landing card); the
 ///   final apply overwrites them, so rendered state provably converges with
 ///   the true fold no matter what ticks did.
-/// * [skipToEnd] applies every remaining effect instantly (tap-anywhere skip).
+/// * [skipToEnd] applies remaining effects instantly (tap-anywhere skip) — but
+///   only up to the first non-skippable step: a non-skippable current step
+///   makes the call a no-op, and the drain stops before a non-skippable
+///   pending step, which then plays out fresh.
 /// * When the speed factor is 0 (reduce motion), every step is instant.
 library;
 
@@ -32,6 +35,10 @@ enum StepKind {
   throwCards,
   reveal,
   pickup,
+
+  /// A pure pause: no visuals, identity apply — holds the queue so whatever
+  /// follows (the next turn) lands late.
+  hold,
   quad,
   playerOut,
   gameOver,
@@ -55,13 +62,15 @@ class AnimStep {
     required this.apply,
     this.event,
     this.ticks = const [],
+    this.skippable = true,
   });
 
   /// A 0 ms step: full effect, no choreography. Unknown events map to this.
   AnimStep.instant(this.apply, {this.event})
       : kind = StepKind.instant,
         baseDuration = Duration.zero,
-        ticks = const [];
+        ticks = const [],
+        skippable = true;
 
   final StepKind kind;
 
@@ -76,6 +85,12 @@ class AnimStep {
 
   /// Cosmetic interpolation ticks, sorted ascending by [StepTick.at].
   final List<StepTick> ticks;
+
+  /// Whether [AnimationQueue.skipToEnd] may collapse this step. Reduce-motion
+  /// (speed factor 0) and the [AnimationQueue.snapBacklog] catch-up still
+  /// collapse non-skippable steps — accessibility and reconnect convergence
+  /// win over set-piece protection.
+  final bool skippable;
 }
 
 /// Snapshot handed to the visual layer when a step begins.
@@ -150,23 +165,31 @@ class AnimationQueue {
     _notify();
   }
 
-  /// Tap-anywhere skip: complete the current step and drain the queue
-  /// instantly. Rendered state lands exactly where it would have.
+  /// Tap-anywhere skip: complete the current step and drain the skippable
+  /// prefix of the queue instantly. Rendered state lands exactly where it
+  /// would have. A non-skippable current step makes this a complete no-op
+  /// (its timers keep running, no [onSkipped] — in-flight visuals survive);
+  /// the drain stops before a non-skippable pending step, which then starts
+  /// fresh via the trailing pump.
   void skipToEnd() {
     if (!busy) return;
-    _cancelTimers();
     final current = _current;
+    if (current != null && !current.skippable) return;
+    _cancelTimers();
     if (current != null) {
       _rendered = current.apply(_stepBefore!);
       _current = null;
       _currentStarted = null;
       _stepBefore = null;
     }
-    while (_pending.isNotEmpty) {
+    while (_pending.isNotEmpty && _pending.first.skippable) {
       _rendered = _pending.removeFirst().apply(_rendered);
     }
     _skippedCtrl.add(null);
     _notify();
+    // CRITICAL: timers are cancelled and nothing else restarts the queue — a
+    // surviving non-skippable step must be pumped or the queue stalls forever.
+    _pump();
   }
 
   void dispose() {

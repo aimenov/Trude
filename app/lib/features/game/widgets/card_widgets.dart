@@ -17,12 +17,21 @@ import 'card_painters.dart';
 const kCardAspect = 68 / 48; // height / width of every card widget
 
 class TrudeCardBack extends StatelessWidget {
-  const TrudeCardBack({super.key, this.width = 48, this.shimmer = false});
+  const TrudeCardBack({
+    super.key,
+    this.width = 48,
+    this.shimmer = false,
+    this.selected = false,
+  });
 
   final double width;
 
   /// Idle gloss sweep; only enabled where a shared ticker is cheap to run.
   final bool shimmer;
+
+  /// Brass outer glow + a slightly stronger lift shadow (geometry unchanged),
+  /// mirroring [TrudeCardFace.selected].
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +43,16 @@ class TrudeCardBack extends StatelessWidget {
         color: TrudeColors.ivory,
         borderRadius: radius,
         boxShadow: [
+          if (selected)
+            BoxShadow(
+              color: TrudeColors.brass.withValues(alpha: 0.55),
+              blurRadius: width * 0.30,
+              spreadRadius: 1,
+            ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 3,
-            offset: const Offset(0, 1.5),
+            color: Colors.black.withValues(alpha: selected ? 0.32 : 0.25),
+            blurRadius: selected ? 6 : 3,
+            offset: Offset(0, selected ? 2.5 : 1.5),
           ),
         ],
       ),
@@ -191,5 +206,24 @@ class TrudeCardFace extends StatelessWidget {
   return (
     offset: Offset(signed() * 10, signed() * 10),
     angle: signed() * 14 * pi / 180,
+  );
+}
+
+/// The resting pose of card [slot] in the laid-down last-throw row: a neat
+/// centered row just below the messy heap, with a whisper of seeded jitter so
+/// the cards read as placed by hand. Deterministic per (slot, rowCount) so
+/// flights land exactly where the stack will draw the card.
+({Offset offset, double angle}) lastThrowRowPose(
+  int slot,
+  int rowCount, {
+  double cardWidth = 52,
+}) {
+  final rng = Random(slot * 5471 + rowCount * 131);
+  double signed() => rng.nextDouble() * 2 - 1;
+  final dx = (slot - (rowCount - 1) / 2) * (cardWidth + 8);
+  final dy = cardWidth * kCardAspect * 0.33;
+  return (
+    offset: Offset(dx + signed() * 1.5, dy + signed() * 1.5),
+    angle: signed() * 4 * pi / 180,
   );
 }

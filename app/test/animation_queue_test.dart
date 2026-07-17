@@ -69,6 +69,40 @@ List<AnimStep> _steps(EventBatch batch) => stepsForBatch(
       jitter: MotionJitter(_CenteredRandom()),
     );
 
+ClientGameState _piledState() => _twoPlayerState().copyWith(
+      pileRank: '7',
+      pileCount: 6,
+      lastThrowCount: 2,
+      lastThrowSeat: 1,
+    );
+
+/// checkResult (picker takes the pile) with the next turn trailing — the
+/// non-skippable reveal + hold set piece. At normal speed with centered
+/// jitter: reveal 2700 ms, pickup 550 + 25*pickedCount ms, hold 800 ms.
+EventBatch _checkBatch({int pickedCount = 6}) => EventBatch.fromJson({
+      'actionCount': 2,
+      'events': [
+        {
+          'type': 'checkResult',
+          'checkerSeat': 0,
+          'targetSeat': 1,
+          'flipIndex': 1,
+          'flipped': {'id': 'c9', 'rank': 'K', 'suit': 'S'},
+          'matched': false,
+          'pickerSeat': 1,
+          'pickedCount': pickedCount,
+          'nextLeadSeat': 0,
+        },
+        {
+          'type': 'turnStarted',
+          'seat': 0,
+          'phase': 'lead',
+          'mustCheck': false,
+          'deadlineTs': 99999,
+        },
+      ],
+    });
+
 void main() {
   group('AnimationQueue', () {
     test('orders and completes steps for a synthetic batch', () {
@@ -213,6 +247,215 @@ void main() {
         expect(queue.rendered.pileCount, 2);
         expect(queue.rendered.playerAtSeat(1)!.cardCount, 3);
         expect(queue.rendered.turn!.seat, 0);
+
+        queue.dispose();
+      });
+    });
+
+    test('skipToEnd is a complete no-op during the non-skippable reveal', () {
+      fakeAsync((async) {
+        final queue = AnimationQueue(
+          speedOf: () => AnimationSpeed.normal,
+          initial: _piledState(),
+        );
+        var skipped = 0;
+        queue.onSkipped.listen((_) => skipped++);
+
+        queue.enqueue(_steps(_checkBatch()));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500)); // mid-reveal
+
+        queue.skipToEnd();
+        async.flushMicrotasks();
+
+        // Nothing happened: no onSkipped (the overlay is never clobbered),
+        // the reveal is still the current step, pile untouched.
+        expect(queue.busy, isTrue);
+        expect(skipped, 0);
+        expect(queue.current!.step.kind, StepKind.reveal);
+        expect(queue.rendered.pileCount, 6);
+
+        // Timers were not cancelled either: the set piece converges on its
+        // own schedule (reveal 2700 + pickup 700 + hold 800, started at 0).
+        async.elapse(const Duration(milliseconds: 4000));
+        expect(queue.busy, isFalse);
+        expect(queue.rendered.pileCount, 0);
+        expect(queue.rendered.playerAtSeat(1)!.cardCount, 11);
+        expect(queue.rendered.turn!.seat, 0);
+
+        queue.dispose();
+      });
+    });
+
+    test('skip during a skippable step ahead of a reveal restarts the queue',
+        () {
+      fakeAsync((async) {
+        final queue = AnimationQueue(
+          speedOf: () => AnimationSpeed.normal,
+          initial: _twoPlayerState(),
+        );
+        var skipped = 0;
+        queue.onSkipped.listen((_) => skipped++);
+
+        final batch = EventBatch.fromJson({
+          'actionCount': 2,
+          'events': [
+            {
+              'type': 'cardsThrown',
+              'seat': 1,
+              'count': 2,
+              'rank': '7',
+              'isLead': true,
+            },
+            {
+              'type': 'checkResult',
+              'checkerSeat': 0,
+              'targetSeat': 1,
+              'flipIndex': 1,
+              'flipped': {'id': 'c9', 'rank': 'K', 'suit': 'S'},
+              'matched': false,
+              'pickerSeat': 1,
+              'pickedCount': 2,
+              'nextLeadSeat': 0,
+            },
+            {
+              'type': 'turnStarted',
+              'seat': 0,
+              'phase': 'lead',
+              'mustCheck': false,
+              'deadlineTs': 99999,
+            },
+          ],
+        });
+        queue.enqueue(_steps(batch));
+        async.flushMicrotasks();
+        expect(queue.current!.step.kind, StepKind.throwCards);
+        async.elapse(const Duration(milliseconds: 100)); // mid-throw
+
+        queue.skipToEnd();
+        async.flushMicrotasks();
+
+        // The throw applied instantly and the drain stopped at the reveal...
+        expect(skipped, 1);
+        expect(queue.rendered.pileCount, 2);
+        expect(queue.rendered.playerAtSeat(1)!.cardCount, 3);
+        // ...and the queue RESTARTED with the reveal current — the _pump()
+        // regression lock: without it the queue stalls forever here.
+        expect(queue.busy, isTrue);
+        expect(queue.current!.step.kind, StepKind.reveal);
+
+        // reveal 2700 + pickup 600 + hold 800 from the skip.
+        async.elapse(const Duration(milliseconds: 4200));
+        expect(queue.busy, isFalse);
+        expect(queue.rendered.pileCount, 0);
+        expect(queue.rendered.playerAtSeat(1)!.cardCount, 5);
+        expect(queue.rendered.turn!.seat, 0);
+
+        queue.dispose();
+      });
+    });
+
+    test('skip during pickup applies it instantly but the hold survives', () {
+      fakeAsync((async) {
+        final queue = AnimationQueue(
+          speedOf: () => AnimationSpeed.normal,
+          initial: _piledState(),
+        );
+        var skipped = 0;
+        queue.onSkipped.listen((_) => skipped++);
+
+        queue.enqueue(_steps(_checkBatch()));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 2800)); // 100 ms into pickup
+        expect(queue.current!.step.kind, StepKind.pickup);
+
+        queue.skipToEnd();
+        async.flushMicrotasks();
+
+        // The pile transferred instantly...
+        expect(skipped, 1);
+        expect(queue.rendered.pileCount, 0);
+        expect(queue.rendered.playerAtSeat(1)!.cardCount, 11);
+        // ...but the hold still gates the next rendered turn.
+        expect(queue.busy, isTrue);
+        expect(queue.current!.step.kind, StepKind.hold);
+        expect(queue.rendered.turn, isNull);
+
+        async.elapse(const Duration(milliseconds: 700));
+        expect(queue.rendered.turn, isNull);
+        async.elapse(const Duration(milliseconds: 150));
+        expect(queue.busy, isFalse);
+        expect(queue.rendered.turn!.seat, 0);
+
+        queue.dispose();
+      });
+    });
+
+    test('hold delays the rendered turnStarted at normal speed', () {
+      fakeAsync((async) {
+        final queue = AnimationQueue(
+          speedOf: () => AnimationSpeed.normal,
+          initial: _piledState(),
+        );
+        queue.enqueue(_steps(_checkBatch()));
+        async.flushMicrotasks();
+
+        // Reveal (2700) + pickup (700) done; the hold is running.
+        async.elapse(const Duration(milliseconds: 3450));
+        expect(queue.rendered.pileCount, 0);
+        expect(queue.rendered.playerAtSeat(1)!.cardCount, 11);
+        expect(queue.busy, isTrue);
+        expect(queue.current!.step.kind, StepKind.hold);
+        expect(queue.rendered.turn, isNull);
+
+        async.elapse(const Duration(milliseconds: 800));
+        expect(queue.busy, isFalse);
+        expect(queue.rendered.turn!.seat, 0);
+
+        queue.dispose();
+      });
+    });
+
+    test('speed off collapses non-skippable steps synchronously', () {
+      fakeAsync((async) {
+        final queue = AnimationQueue(
+          speedOf: () => AnimationSpeed.off,
+          initial: _piledState(),
+        );
+        queue.enqueue(_steps(_checkBatch()));
+
+        // Reveal, pickup, and hold all applied with no busy window.
+        expect(queue.busy, isFalse);
+        expect(queue.rendered.pileCount, 0);
+        expect(queue.rendered.playerAtSeat(1)!.cardCount, 11);
+        expect(queue.rendered.turn!.seat, 0);
+
+        queue.dispose();
+      });
+    });
+
+    test('snapBacklog catch-up collapses non-skippable steps', () {
+      fakeAsync((async) {
+        final queue = AnimationQueue(
+          speedOf: () => AnimationSpeed.normal,
+          initial: _twoPlayerState(),
+        );
+        AnimStep hold() => AnimStep(
+              kind: StepKind.hold,
+              baseDuration: const Duration(milliseconds: 800),
+              apply: (s) => s.copyWith(pileCount: s.pileCount + 1),
+              skippable: false,
+            );
+        queue.enqueue([for (var i = 0; i < 12; i++) hold()]);
+
+        // The steps behind the snap backlog applied synchronously despite
+        // being non-skippable — reconnect convergence wins.
+        expect(queue.rendered.pileCount, 2);
+        expect(queue.busy, isTrue);
+
+        async.elapse(const Duration(seconds: 20));
+        expect(queue.busy, isFalse);
+        expect(queue.rendered.pileCount, 12);
 
         queue.dispose();
       });

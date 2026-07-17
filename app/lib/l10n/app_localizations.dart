@@ -368,30 +368,6 @@ abstract class AppLocalizations {
   /// **'Deck {deckSize} · Timer {turnTimerSec}s · Max {maxPlayers} players'**
   String configLine(int deckSize, int turnTimerSec, int maxPlayers);
 
-  /// No description provided for @playingRankLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Playing: {word}'**
-  String playingRankLabel(String word);
-
-  /// No description provided for @freshPile.
-  ///
-  /// In en, this message translates to:
-  /// **'New pile — leader names a rank'**
-  String get freshPile;
-
-  /// No description provided for @trust.
-  ///
-  /// In en, this message translates to:
-  /// **'TRUST'**
-  String get trust;
-
-  /// No description provided for @check.
-  ///
-  /// In en, this message translates to:
-  /// **'CHECK'**
-  String get check;
-
   /// No description provided for @mustCheckReason.
   ///
   /// In en, this message translates to:
@@ -425,8 +401,26 @@ abstract class AppLocalizations {
   /// No description provided for @yourTurnRespond.
   ///
   /// In en, this message translates to:
-  /// **'Your turn — trust or check'**
+  /// **'Your turn — flip a card or throw'**
   String get yourTurnRespond;
+
+  /// No description provided for @yourTurnForcedCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Your turn — flip a card'**
+  String get yourTurnForcedCheck;
+
+  /// No description provided for @forcedCheckTurn.
+  ///
+  /// In en, this message translates to:
+  /// **'{nickname} must check'**
+  String forcedCheckTurn(String nickname);
+
+  /// No description provided for @respondChoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Flip one of their cards to call the bluff — or throw your own on top'**
+  String get respondChoiceHint;
 
   /// No description provided for @selectCardsHint.
   ///
@@ -440,11 +434,11 @@ abstract class AppLocalizations {
   /// **'Pile: {n}'**
   String pileCount(int n);
 
-  /// No description provided for @lastThrowLabel.
+  /// No description provided for @lastClaimPlaque.
   ///
   /// In en, this message translates to:
-  /// **'Last throw: {n}'**
-  String lastThrowLabel(int n);
+  /// **'{nickname}: {claim}'**
+  String lastClaimPlaque(String nickname, String claim);
 
   /// No description provided for @retiredRanksLabel.
   ///
@@ -487,66 +481,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting…'**
   String get waitingForOpponent;
-
-  /// No description provided for @threwEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'{nickname} threw {claim}'**
-  String threwEvent(String nickname, String claim);
-
-  /// No description provided for @liarEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'LIAR! {nickname} picks up {count, plural, =1{1 card} other{{count} cards}}'**
-  String liarEvent(String nickname, num count);
-
-  /// No description provided for @truthEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'It was true — {nickname} picks up {count, plural, =1{1 card} other{{count} cards}}'**
-  String truthEvent(String nickname, num count);
-
-  /// No description provided for @fourDiscardedEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'{nickname} discarded {claim}'**
-  String fourDiscardedEvent(String nickname, String claim);
-
-  /// No description provided for @playerOutEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'{nickname} is out — safe!'**
-  String playerOutEvent(String nickname);
-
-  /// No description provided for @autoActedEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'{nickname} acted on timeout'**
-  String autoActedEvent(String nickname);
-
-  /// No description provided for @playerJoinedEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'{nickname} joined'**
-  String playerJoinedEvent(String nickname);
-
-  /// No description provided for @playerLeftEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'{nickname} left'**
-  String playerLeftEvent(String nickname);
-
-  /// No description provided for @gameStartedEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'Game started!'**
-  String get gameStartedEvent;
-
-  /// No description provided for @gameOverEventText.
-  ///
-  /// In en, this message translates to:
-  /// **'Game over'**
-  String get gameOverEventText;
 
   /// No description provided for @seatName.
   ///
@@ -631,12 +565,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rank, select, r2{TWO} r3{THREE} r4{FOUR} r5{FIVE} r6{SIX} r7{SEVEN} r8{EIGHT} r9{NINE} r10{TEN} jack{JACK} queen{QUEEN} king{KING} ace{ACE} joker{JOKER} other{{rank}}}'**
   String rankWord(String rank);
-
-  /// No description provided for @rankPlural.
-  ///
-  /// In en, this message translates to:
-  /// **'{rank, select, r2{TWOS} r3{THREES} r4{FOURS} r5{FIVES} r6{SIXES} r7{SEVENS} r8{EIGHTS} r9{NINES} r10{TENS} jack{JACKS} queen{QUEENS} king{KINGS} ace{ACES} joker{JOKERS} other{{rank}}}'**
-  String rankPlural(String rank);
 
   /// No description provided for @rankShort.
   ///

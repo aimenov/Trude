@@ -246,14 +246,17 @@ class _SeatAvatarState extends State<SeatAvatar>
     );
   }
 
-  /// A tiny ivory card-stack pictogram beside the count.
+  /// A tiny ivory card-stack pictogram beside the count. An empty hand on a
+  /// player still in the round goes brass — it forces the responder to check.
   Widget _countChip(int count) {
+    final emptyButIn = count == 0 && !widget.player.isOut;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: TrudeColors.surfaceSunken,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: TrudeColors.hairline),
+        border: Border.all(
+            color: emptyButIn ? TrudeColors.brass : TrudeColors.hairline),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -265,11 +268,13 @@ class _SeatAvatarState extends State<SeatAvatar>
           const SizedBox(width: 4),
           Text(
             '$count',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               height: 1.2,
               fontWeight: FontWeight.w800,
-              color: TrudeColors.textPrimary,
+              color: emptyButIn
+                  ? TrudeColors.brassBright
+                  : TrudeColors.textPrimary,
             ),
           ),
         ],

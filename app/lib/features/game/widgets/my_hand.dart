@@ -37,6 +37,7 @@ import 'package:flutter/material.dart' hide Card;
 
 import '../../../core/motion/animation_speed.dart';
 import '../../../core/net/protocol_models.dart';
+import '../../../core/theme/trude_theme.dart';
 import '../anim/card_flight.dart';
 import '../anim/motion_spec.dart';
 import 'card_widgets.dart';
@@ -55,6 +56,11 @@ class MyHandView extends StatefulWidget {
   });
 
   final List<Card> cards;
+
+  /// Selected card ids in INSERTION order: the caller keeps an
+  /// insertion-ordered set (deselect+reselect moves a card to the end), and
+  /// iteration order = throw order — slot i of the laid row. Drives the
+  /// ordinal badges when >= 2 cards are selected.
   final Set<String> selectedIds;
 
   /// Whether taps select cards right now (my throw UI is open).
@@ -300,6 +306,11 @@ class _MyHandViewState extends State<MyHandView>
   @override
   Widget build(BuildContext context) {
     final w = widget.cardWidth;
+    // Throw-order ordinals: selectedIds iterates in insertion (= throw)
+    // order. A lone "1" is noise, so badges appear only from 2 selected on.
+    final ordinals = widget.selectedIds.length >= 2
+        ? {for (final (i, id) in widget.selectedIds.indexed) id: i + 1}
+        : const <String, int>{};
     // ONE strip-level flick recognizer covers the WHOLE hand — cards
     // (selected or not), the gaps between them, and the empty flanks. With
     // several cards selected the natural upward swipe rarely begins exactly
@@ -345,7 +356,7 @@ class _MyHandViewState extends State<MyHandView>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   for (var i = 0; i < widget.cards.length; i++)
-                    _handCard(widget.cards[i], i, w),
+                    _handCard(widget.cards[i], i, w, ordinals),
                 ],
               );
             }
@@ -356,7 +367,8 @@ class _MyHandViewState extends State<MyHandView>
               clipBehavior: Clip.none,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               itemCount: widget.cards.length,
-              itemBuilder: (context, i) => _handCard(widget.cards[i], i, w),
+              itemBuilder: (context, i) =>
+                  _handCard(widget.cards[i], i, w, ordinals),
             );
           },
         ),
@@ -364,9 +376,10 @@ class _MyHandViewState extends State<MyHandView>
     );
   }
 
-  Widget _handCard(Card card, int index, double w) {
+  Widget _handCard(Card card, int index, double w, Map<String, int> ordinals) {
     final selected = widget.selectedIds.contains(card.id);
     final enterIndex = _enterOrder[card.id];
+    final ordinal = ordinals[card.id];
 
     Widget child = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -374,11 +387,32 @@ class _MyHandViewState extends State<MyHandView>
         offset: selected ? const Offset(0, -0.12) : Offset.zero,
         duration: widget.speed.scale(const Duration(milliseconds: 140)),
         curve: Curves.easeOut,
-        child: TrudeCardFace(
-          rank: card.rank,
-          suit: card.suit,
-          width: w,
-          selected: selected,
+        // The badge rides every card transform (lift/shiver/pop/drag) for
+        // free by living inside the slide. Stack sizes to the card face;
+        // Clip.none lets the badge overhang — the strip Row and ListView
+        // don't clip either.
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            TrudeCardFace(
+              rank: card.rank,
+              suit: card.suit,
+              width: w,
+              selected: selected,
+            ),
+            if (ordinal != null)
+              // Top-RIGHT: at w=46 a top-left badge sits exactly over the
+              // card's corner rank index; the right corner is blank.
+              Positioned(
+                top: -4,
+                right: -4,
+                child: _OrderBadge(
+                  key: ValueKey('order-badge-${card.id}'),
+                  ordinal: ordinal,
+                  cardWidth: w,
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -451,6 +485,46 @@ class _MyHandViewState extends State<MyHandView>
     return GestureDetector(
       onTap: widget.selectable ? () => widget.onToggle(card, !selected) : null,
       child: child,
+    );
+  }
+}
+
+/// Brass ordinal stamped on a selected card's corner: this card's slot in
+/// the throw order (= its slot in the laid row, left to right). Reorder by
+/// retapping — deselect+reselect moves a card to the end.
+class _OrderBadge extends StatelessWidget {
+  const _OrderBadge({super.key, required this.ordinal, required this.cardWidth});
+
+  final int ordinal;
+  final double cardWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = max(15.0, cardWidth * 0.34);
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: TrudeGradients.brass,
+        border: Border.all(color: TrudeColors.brassDark),
+        boxShadow: [
+          BoxShadow(
+            color: TrudeColors.midnight.withValues(alpha: 0.5),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Text(
+        '$ordinal',
+        style: TrudeType.stamp.copyWith(
+          fontSize: size * 0.62,
+          color: TrudeColors.textOnBrass,
+          letterSpacing: 0,
+        ),
+      ),
     );
   }
 }

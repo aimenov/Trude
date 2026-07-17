@@ -33,6 +33,8 @@ export const config = {
     pickupPerCardMs: 25,
     pickupCardCap: 24,
     pickupCapMs: 1_600,
+    /** Non-skippable pause after the pickup (client MotionSpec.checkHold). */
+    checkHoldMs: 800,
     /** Quad-discard celebration, per event. */
     fourDiscardedMs: 1_200,
     /** "Safe!" flourish, per event. */

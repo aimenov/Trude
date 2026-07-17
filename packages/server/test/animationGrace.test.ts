@@ -32,16 +32,16 @@ describe('graceForBatch', () => {
       .toBe(g.dealMs + g.bufferMs); // 2750
   });
 
-  it('charges reveal + pickup estimate for checkResult', () => {
+  it('charges reveal + pickup estimate + hold for checkResult', () => {
     expect(graceForBatch([ev({ type: 'checkResult', pickedCount: 4 })]))
-      .toBe(g.checkResultMs + pickup(4) + g.bufferMs); // 2700 + 650 + 250
+      .toBe(g.checkResultMs + pickup(4) + g.checkHoldMs + g.bufferMs); // 2700 + 650 + 800 + 250
   });
 
   it('caps the pickup estimate card count at pickupCardCap', () => {
     const atCap = graceForBatch([ev({ type: 'checkResult', pickedCount: g.pickupCardCap })]);
     const beyond = graceForBatch([ev({ type: 'checkResult', pickedCount: 53 })]);
     expect(beyond).toBe(atCap);
-    expect(atCap).toBe(g.checkResultMs + pickup(g.pickupCardCap) + g.bufferMs);
+    expect(atCap).toBe(g.checkResultMs + pickup(g.pickupCardCap) + g.checkHoldMs + g.bufferMs);
   });
 
   it('never exceeds pickupCapMs for the pickup estimate', () => {
@@ -66,7 +66,7 @@ describe('graceForBatch', () => {
       ev({ type: 'fourDiscarded' }),
       ev({ type: 'playerOut' }),
       ev({ type: 'turnStarted' }),
-    ])).toBe(g.checkResultMs + pickup(2) + g.fourDiscardedMs + g.playerOutMs + g.bufferMs);
+    ])).toBe(g.checkResultMs + pickup(2) + g.checkHoldMs + g.fourDiscardedMs + g.playerOutMs + g.bufferMs);
   });
 
   it('caps the total at totalCapMs', () => {
@@ -78,6 +78,6 @@ describe('graceForBatch', () => {
       ev({ type: 'playerOut' }),
       ev({ type: 'playerOut' }),
     ];
-    expect(graceForBatch(huge)).toBe(g.totalCapMs); // raw sum 11550 > 8000
+    expect(graceForBatch(huge)).toBe(g.totalCapMs); // raw sum 13150 (incl. 2x checkHoldMs) > 8000
   });
 });

@@ -126,6 +126,8 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
         _sfx.jokerReveal();
         _haptics.heavy();
         setState(() => _gameOver = started);
+      case StepKind.hold:
+        break;
       case StepKind.instant:
         break;
     }
@@ -176,13 +178,11 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
     if (pile == null || from == null) return;
 
     _haptics.light();
-    final pileBefore = event.isLead ? 0 : started.before.pileCount;
     final stepMs = max(1, started.step.baseDuration.inMilliseconds);
     final specs = <CardFlightSpec>[];
     for (var i = 0; i < event.count; i++) {
-      // Land in the exact pose the pile stack will draw for this card.
-      final pose = pileEntryPose(
-          min(pileBefore + i, MotionSpec.pileRenderCap - 1));
+      // Land in the exact laid-down row pose the pile stack will draw.
+      final pose = lastThrowRowPose(i, event.count);
       specs.add(CardFlightSpec(
         from: from,
         to: pile.shift(pose.offset),
@@ -222,12 +222,17 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
     _sfx.pilePickup();
     if (event.pickerSeat == mySeat) _haptics.medium();
 
+    // The laid-down row lifts off first, then cards from the messy heap.
+    final lastN = started.before.lastThrowCount;
     final flights = min(event.pickedCount, MotionSpec.pileRenderCap);
     final stepMs = max(1, started.step.baseDuration.inMilliseconds);
     _flights.fly([
       for (var i = 0; i < flights; i++)
         CardFlightSpec(
-          from: pile.shift(pileEntryPose(i).offset),
+          from: pile.shift((i < lastN
+                  ? lastThrowRowPose(i, lastN)
+                  : pileEntryPose(i - lastN))
+              .offset),
           to: to,
           delay: _at(started,
               MotionSpec.pickupStagger.inMilliseconds * i / stepMs),

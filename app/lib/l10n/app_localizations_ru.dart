@@ -172,20 +172,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String playingRankLabel(String word) {
-    return 'В игре: $word';
-  }
-
-  @override
-  String get freshPile => 'Новая стопка — ходящий объявляет карту';
-
-  @override
-  String get trust => 'ВЕРЮ';
-
-  @override
-  String get check => 'НЕ ВЕРЮ';
-
-  @override
   String get mustCheckReason =>
       'У соперника кончились карты — придётся проверять';
 
@@ -202,7 +188,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get yourTurnLead => 'Твой ход — ходи';
 
   @override
-  String get yourTurnRespond => 'Твой ход — веришь или нет?';
+  String get yourTurnRespond => 'Твой ход — открой карту или бросай';
+
+  @override
+  String get yourTurnForcedCheck => 'Твой ход — открой карту';
+
+  @override
+  String forcedCheckTurn(String nickname) {
+    return '$nickname — только проверка';
+  }
+
+  @override
+  String get respondChoiceHint =>
+      'Открой любую карту броска — или бросай свои сверху';
 
   @override
   String get selectCardsHint => 'Выбери до 3 карт';
@@ -213,8 +211,8 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String lastThrowLabel(int n) {
-    return 'Последний бросок: $n';
+  String lastClaimPlaque(String nickname, String claim) {
+    return '$nickname: $claim';
   }
 
   @override
@@ -241,68 +239,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get waitingForOpponent => 'Ждём…';
-
-  @override
-  String threwEvent(String nickname, String claim) {
-    return '$nickname бросает $claim';
-  }
-
-  @override
-  String liarEvent(String nickname, num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count карты',
-      many: '$count карт',
-      few: '$count карты',
-      one: '$count карту',
-    );
-    return 'ВРАНЬЁ! $nickname забирает $_temp0';
-  }
-
-  @override
-  String truthEvent(String nickname, num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count карты',
-      many: '$count карт',
-      few: '$count карты',
-      one: '$count карту',
-    );
-    return 'Правда — $nickname забирает $_temp0';
-  }
-
-  @override
-  String fourDiscardedEvent(String nickname, String claim) {
-    return '$nickname сбрасывает $claim';
-  }
-
-  @override
-  String playerOutEvent(String nickname) {
-    return '$nickname вышел — спасён!';
-  }
-
-  @override
-  String autoActedEvent(String nickname) {
-    return '$nickname — автоход по таймеру';
-  }
-
-  @override
-  String playerJoinedEvent(String nickname) {
-    return '$nickname присоединился';
-  }
-
-  @override
-  String playerLeftEvent(String nickname) {
-    return '$nickname вышел из комнаты';
-  }
-
-  @override
-  String get gameStartedEvent => 'Игра началась!';
-
-  @override
-  String get gameOverEventText => 'Игра окончена';
 
   @override
   String seatName(int number) {
@@ -487,28 +423,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'king': 'КОРОЛЬ',
       'ace': 'ТУЗ',
       'joker': 'ДЖОКЕР',
-      'other': '$rank',
-    });
-    return '$_temp0';
-  }
-
-  @override
-  String rankPlural(String rank) {
-    String _temp0 = intl.Intl.selectLogic(rank, {
-      'r2': 'ДВОЙКИ',
-      'r3': 'ТРОЙКИ',
-      'r4': 'ЧЕТВЁРКИ',
-      'r5': 'ПЯТЁРКИ',
-      'r6': 'ШЕСТЁРКИ',
-      'r7': 'СЕМЁРКИ',
-      'r8': 'ВОСЬМЁРКИ',
-      'r9': 'ДЕВЯТКИ',
-      'r10': 'ДЕСЯТКИ',
-      'jack': 'ВАЛЬТЫ',
-      'queen': 'ДАМЫ',
-      'king': 'КОРОЛИ',
-      'ace': 'ТУЗЫ',
-      'joker': 'ДЖОКЕРЫ',
       'other': '$rank',
     });
     return '$_temp0';

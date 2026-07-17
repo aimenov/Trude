@@ -18,17 +18,20 @@ void main() {
       home: Builder(builder: (context) {
         // What StringsSync does in the real app builder.
         Strings.use(AppLocalizations.of(context));
-        return Column(children: [
+        // Scrollable (not a lazy ListView, which would skip offscreen rows):
+        // the long respond hint wraps and a bare Column would overflow.
+        return SingleChildScrollView(
+            child: Column(children: [
           Text(Strings.claimCallout(3, '7')),
           Text(Strings.claimCallout(1, 'J')),
           Text(Strings.claimCallout(2, 'Q')),
           Text(Strings.claimCallout(1, '10')),
           Text(Strings.quadBanner('7')),
-          Text(Strings.playingRank('A')),
-          Text(Strings.threwEvent('Вася', 2, '7')),
-          Text(Strings.trust),
-          Text(Strings.check),
-        ]);
+          Text(Strings.yourTurnForcedCheck),
+          Text(Strings.forcedCheckTurn('Вася')),
+          Text(Strings.respondChoiceHint),
+          Text(Strings.lastClaimPlaque('Вася', Strings.claimBody(3, '7'))),
+        ]));
       }),
     ));
 
@@ -41,15 +44,16 @@ void main() {
     // Quad banner reuses the count-4 paucal form.
     expect(find.text('ЧЕТЫРЕ СЕМЁРКИ — В СБРОС!'), findsOneWidget);
 
-    // Nominative plural for the pile label.
-    expect(find.text('В игре: ТУЗЫ'), findsOneWidget);
+    // Forced-check turn lines (thrower emptied their hand).
+    expect(find.text('Твой ход — открой карту'), findsOneWidget);
+    expect(find.text('Вася — только проверка'), findsOneWidget);
 
-    // Event feed reuses the lowercased claim.
-    expect(find.text('Вася бросает две семёрки'), findsOneWidget);
+    // The buttonless respond turn: both choices in one hint.
+    expect(find.text('Открой любую карту броска — или бросай свои сверху'),
+        findsOneWidget);
 
-    // The classic verbs of the game family.
-    expect(find.text('ВЕРЮ'), findsOneWidget);
-    expect(find.text('НЕ ВЕРЮ'), findsOneWidget);
+    // Claim plaque keeps the paucal agreement through claimBody.
+    expect(find.text('Вася: ТРИ СЕМЁРКИ'), findsOneWidget);
   });
 
   testWidgets('EN locale keeps the original callouts', (tester) async {

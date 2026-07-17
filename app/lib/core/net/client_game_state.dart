@@ -104,7 +104,6 @@ class ClientGameState {
     this.myHand = const [],
     this.mySeat = -1,
     this.lastResults,
-    this.lastEventText,
   });
 
   static const empty = ClientGameState();
@@ -128,7 +127,6 @@ class ClientGameState {
   final List<Card> myHand;
   final int mySeat;
   final GameOverEvent? lastResults;
-  final String? lastEventText;
 
   bool get isMyTurn => mySeat >= 0 && turn != null && turn!.seat == mySeat;
 
@@ -191,7 +189,6 @@ class ClientGameState {
     List<Card>? myHand,
     int? mySeat,
     Object? lastResults = _sentinel,
-    Object? lastEventText = _sentinel,
   }) =>
       ClientGameState(
         roomPhase: roomPhase ?? this.roomPhase,
@@ -213,9 +210,6 @@ class ClientGameState {
         lastResults: lastResults == _sentinel
             ? this.lastResults
             : lastResults as GameOverEvent?,
-        lastEventText: lastEventText == _sentinel
-            ? this.lastEventText
-            : lastEventText as String?,
       );
 
   static const _sentinel = Object();

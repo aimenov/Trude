@@ -6,12 +6,11 @@
 /// guarantees both projections converge to identical states.
 library;
 
-import '../strings.dart';
 import 'client_game_state.dart';
 import 'protocol_models.dart';
 
 /// Folds a full resync snapshot. [previous] supplies the fields that only
-/// exist client-side (lastResults kept visible while 'finished', event text).
+/// exist client-side (lastResults kept visible while 'finished').
 ClientGameState foldStateFull(
   StateFull s, {
   required String? myUserId,
@@ -49,7 +48,6 @@ ClientGameState foldStateFull(
     mySeat: mySeat,
     // Keep the verdict visible while the room is still in 'finished'.
     lastResults: previous.lastResults,
-    lastEventText: previous.lastEventText,
   );
 }
 
@@ -93,7 +91,6 @@ ClientGameState applyEventTo(
         turn: null,
         mustCheck: false,
         lastResults: null,
-        lastEventText: Strings.gameStartedEvent,
       );
 
     case TurnStartedEvent():
@@ -116,12 +113,9 @@ ClientGameState applyEventTo(
         pileCount: event.isLead ? event.count : s.pileCount + event.count,
         lastThrowCount: event.count,
         lastThrowSeat: event.seat,
-        lastEventText: Strings.threwEvent(
-            s.nicknameAtSeat(event.seat), event.count, event.rank),
       );
 
     case CheckResultEvent():
-      final pickerName = s.nicknameAtSeat(event.pickerSeat);
       return s.copyWith(
         players: updateSeat(s.players, event.pickerSeat,
             (p) => p.copyWith(cardCount: p.cardCount + event.pickedCount)),
@@ -129,9 +123,6 @@ ClientGameState applyEventTo(
         pileCount: 0,
         lastThrowCount: 0,
         lastThrowSeat: null,
-        lastEventText: event.matched
-            ? Strings.truthEvent(pickerName, event.pickedCount)
-            : Strings.liarEvent(pickerName, event.pickedCount),
       );
 
     case FourDiscardedEvent():
@@ -139,15 +130,12 @@ ClientGameState applyEventTo(
         players: updateSeat(s.players, event.seat,
             (p) => p.copyWith(cardCount: p.cardCount - event.cards.length)),
         retiredRanks: [...s.retiredRanks, event.rank],
-        lastEventText: Strings.fourDiscardedEvent(
-            s.nicknameAtSeat(event.seat), event.rank),
       );
 
     case PlayerOutEvent():
       return s.copyWith(
         players:
             updateSeat(s.players, event.seat, (p) => p.copyWith(isOut: true)),
-        lastEventText: Strings.playerOutEvent(s.nicknameAtSeat(event.seat)),
       );
 
     case GameOverEvent():
@@ -156,7 +144,6 @@ ClientGameState applyEventTo(
         turn: null,
         mustCheck: false,
         lastResults: event,
-        lastEventText: Strings.gameOverEventText,
       );
 
     case GenericEvent():
@@ -183,10 +170,7 @@ ClientGameState _applyGenericEvent(ClientGameState s, GenericEvent event) {
       );
       final players = [...s.players, joined]
         ..sort((a, b) => a.seat.compareTo(b.seat));
-      return s.copyWith(
-        players: players,
-        lastEventText: Strings.playerJoinedEvent(joined.nickname),
-      );
+      return s.copyWith(players: players);
 
     case 'playerLeft':
       final userId = raw['userId'] as String;
@@ -194,7 +178,6 @@ ClientGameState _applyGenericEvent(ClientGameState s, GenericEvent event) {
       if (gone == null) return s;
       return s.copyWith(
         players: s.players.where((p) => p.userId != userId).toList(),
-        lastEventText: Strings.playerLeftEvent(gone.nickname),
       );
 
     case 'roomConfigured':
@@ -235,11 +218,6 @@ ClientGameState _applyGenericEvent(ClientGameState s, GenericEvent event) {
       return s.copyWith(
           players: updateSeat(
               s.players, seat, (p) => p.copyWith(connected: connected)));
-
-    case 'autoActed':
-      final seat = (raw['seat'] as num).toInt();
-      return s.copyWith(
-          lastEventText: Strings.autoActedEvent(s.nicknameAtSeat(seat)));
 
     default:
       return s;

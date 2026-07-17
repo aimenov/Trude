@@ -11,7 +11,6 @@ import 'dart:math';
 import '../../../core/net/client_game_state.dart';
 import '../../../core/net/protocol_models.dart';
 import '../../../core/net/state_folding.dart';
-import '../../../core/strings.dart';
 import 'animation_queue.dart';
 import 'motion_jitter.dart';
 import 'motion_spec.dart';
@@ -231,20 +230,16 @@ List<AnimStep> _checkResultSteps(
   ClientGameState Function(ClientGameState) fold,
   MotionJitter jitter,
 ) {
-  // Reveal only changes the event-strip text; pile/counts stay put while the
-  // flip plays center-stage. The pickup step then applies the full fold, so
+  // Reveal is a pure timing step: pile/counts stay put while the flip plays
+  // center-stage. The pickup step then applies the full fold, so
   // reveal+pickup compose to exactly the shared fold.
   final revealStep = AnimStep(
     kind: StepKind.reveal,
     event: event,
     baseDuration: MotionSpec.revealTotal,
-    apply: (s) {
-      final pickerName = s.nicknameAtSeat(event.pickerSeat);
-      return s.copyWith(
-          lastEventText: event.matched
-              ? Strings.truthEvent(pickerName, event.pickedCount)
-              : Strings.liarEvent(pickerName, event.pickedCount));
-    },
+    // The verdict set piece must always play out — a stray tap can't skip it.
+    skippable: false,
+    apply: (s) => s,
   );
 
   final flights = min(event.pickedCount, MotionSpec.pileRenderCap);
@@ -280,7 +275,18 @@ List<AnimStep> _checkResultSteps(
     ],
   );
 
-  return [revealStep, pickupStep];
+  // Identity pause after the pickup so the next turn never renders on its
+  // heels. The pickup itself stays skippable (escape hatch during up to
+  // 1600 ms of flights); the skip drain stops here, so the pause always plays.
+  final holdStep = AnimStep(
+    kind: StepKind.hold,
+    event: event,
+    baseDuration: MotionSpec.checkHold,
+    apply: (s) => s,
+    skippable: false,
+  );
+
+  return [revealStep, pickupStep, holdStep];
 }
 
 /// Sub-linear stagger count: piles bigger than twice the render cap don't

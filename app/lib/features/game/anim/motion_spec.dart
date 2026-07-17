@@ -75,6 +75,10 @@ abstract final class MotionSpec {
   static const pickupCap = Duration(milliseconds: 1600);
   static const pickupFlightCurve = Curves.easeInCubic; // accelerating converge
 
+  /// Non-skippable pause after the pickup, before the next turn renders.
+  /// Mirrors the server `animationGrace.checkHoldMs`.
+  static const checkHold = Duration(milliseconds: 800);
+
   // -- Four-of-a-kind ------------------------------------------------------------
 
   static const quadTotal = Duration(milliseconds: 1200);
@@ -124,6 +128,11 @@ abstract final class MotionSpec {
 
   /// Card backs actually rendered in the messy stack; the rest is a badge.
   static const pileRenderCap = 12;
+
+  /// The old last-throw row folding into the messy heap when a new throw
+  /// lands on top of it.
+  static const pileTuck = Duration(milliseconds: 280);
+  static const pileTuckCurve = Curves.easeOutCubic;
 
   // -- Shared entrance -----------------------------------------------------------
 

@@ -16,7 +16,6 @@ import 'anim/table_anchors.dart';
 import 'anim/table_fx_layer.dart';
 import 'logic/rules_view.dart' as rules;
 import 'table_scale.dart';
-import 'widgets/card_widgets.dart';
 import 'widgets/countdown_ring.dart';
 import 'widgets/my_hand.dart';
 import 'widgets/pile_stack.dart';
@@ -52,9 +51,9 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   final _subs = <StreamSubscription<dynamic>>[];
   final _anchors = TableAnchors();
 
-  /// Local action-bar mode for my respond turn.
-  bool _checking = false;
-  bool _trusting = false;
+  /// A check has been sent this turn — double-tapping two row cards must not
+  /// fire a second `check` that errors. Reset on turn/deadline change.
+  bool _checkSent = false;
   final Set<String> _selectedCardIds = {};
   String? _chosenRank;
 
@@ -107,8 +106,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   }
 
   void _resetTurnUi() {
-    _checking = false;
-    _trusting = false;
+    _checkSent = false;
     _selectedCardIds.clear();
     _chosenRank = null;
     _rankChosenManually = false;
@@ -148,8 +146,10 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     if (_autoSubmittedDeadline == turn.deadlineTs) return;
     final remaining = _remaining(turn);
     if (remaining <= Duration.zero || remaining > _autoSubmitWindow) return;
+    // A standing legal selection on a respond turn auto-throws too — keeping
+    // cards selected expresses trust; the server random-flip stays the
+    // backstop when nothing is staged.
     final leading = turn.phase == 'lead';
-    if (!leading && !_trusting) return;
     final legal = _selectedCardIds.isNotEmpty &&
         _selectedCardIds.length <= rules.maxThrowCount(s.myHand.length) &&
         (!leading || _chosenRank != null);
@@ -159,9 +159,13 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   }
 
   void _flip(int index) {
+    if (_checkSent) return;
     ref.read(currentRoomProvider)?.check(index);
     ref.read(hapticsProvider).medium();
-    setState(_resetTurnUi);
+    setState(() {
+      _resetTurnUi();
+      _checkSent = true;
+    });
   }
 
   void _onTapAnywhere() {
@@ -185,12 +189,10 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       .copyWith(fontSize: 12 * scale, letterSpacing: 2.2, height: 1.2);
 
   /// Small italic serif — hints and disabled-reason lines. The bundled italic
-  /// weight is 700, so hints stay on it. The center-table event strip passes
-  /// the table scale and gets a larger 14·s size; the bottom action-area
-  /// hints omit it and keep the compact 12.5 base.
-  TextStyle _hintSerif({double? scale}) => TrudeType.cardIndex.copyWith(
+  /// weight is 700, so hints stay on it.
+  TextStyle _hintSerif() => TrudeType.cardIndex.copyWith(
         fontStyle: FontStyle.italic,
-        fontSize: scale == null ? 12.5 : 14 * scale,
+        fontSize: 12.5,
         height: 1.35,
         color: TrudeColors.textMuted,
       );
@@ -269,9 +271,6 @@ class _TableScreenState extends ConsumerState<TableScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(rendered.pileRank != null
-            ? Strings.playingRank(rendered.pileRank!)
-            : Strings.freshPile),
         actions: [
           if (rendered.roomCode != null)
             Padding(
@@ -302,8 +301,9 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                     children: [
                       _opponentsRow(rendered, speed),
                       _hairlineSeam(),
-                      Expanded(child: _centerArea(rendered, speed, scale)),
-                      _eventStrip(rendered, scale),
+                      Expanded(
+                          child: _centerArea(
+                              rendered, trueState, speed, scale, busy)),
                       _hairlineSeam(),
                       _handArea(trueState, rendered, speed, busy),
                       AbsorbPointer(
@@ -379,8 +379,16 @@ class _TableScreenState extends ConsumerState<TableScreen> {
 
   // -- Center ---------------------------------------------------------------
 
-  Widget _centerArea(
-      ClientGameState state, AnimationSpeed speed, double scale) {
+  Widget _centerArea(ClientGameState state, ClientGameState trueState,
+      AnimationSpeed speed, double scale, bool busy) {
+    // Direct tap-to-check: the laid-down row is live only on my armed respond
+    // turn, before any throw/check has been staged this turn.
+    final canCheck = !busy &&
+        trueState.isMyTurn &&
+        trueState.turn?.phase == 'respond' &&
+        trueState.lastThrowCount > 0 &&
+        _pendingThrow == null &&
+        !_checkSent;
     return Column(
       children: [
         Padding(
@@ -401,15 +409,19 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                     count: state.pileCount,
                     rank: state.pileRank,
                     speed: speed,
+                    lastThrowCount: state.lastThrowCount,
+                    onRowCardTap: canCheck ? _flip : null,
                   ),
                   const SizedBox(height: 6),
-                  Text(Strings.pileCount(state.pileCount),
-                      style: _etchedLabel(scale)),
-                  if (state.lastThrowCount > 0 && state.pileRank != null)
+                  if (state.lastThrowCount > 0 &&
+                      state.pileRank != null &&
+                      state.lastThrowSeat != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.only(bottom: 6),
                       child: _claimPlaque(state, scale),
                     ),
+                  Text(Strings.pileCount(state.pileCount),
+                      style: _etchedLabel(scale)),
                 ],
               ),
             ),
@@ -423,15 +435,18 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     );
   }
 
-  /// The standing claim, engraved into a brass plaque under the pile.
+  /// The standing claim, engraved into a brass plaque directly under the
+  /// laid-down row: «Вася: ТРИ СЕМЁРКИ» / "Wes: THREE SEVENS".
   Widget _claimPlaque(ClientGameState state, double scale) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: _brassPlaque(),
       child: Text(
-        '${Strings.lastThrowLabel(state.lastThrowCount)} × '
-        '${Strings.rankWord(state.pileRank!)}',
-        style: _engraved(14 * scale),
+        Strings.lastClaimPlaque(
+          state.nicknameAtSeat(state.lastThrowSeat!),
+          Strings.claimBody(state.lastThrowCount, state.pileRank!),
+        ),
+        style: _engraved(16 * scale),
       ),
     );
   }
@@ -465,8 +480,12 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     final who = turn.seat == state.mySeat
         ? (turn.phase == 'lead'
             ? Strings.yourTurnLead
-            : Strings.yourTurnRespond)
-        : state.nicknameAtSeat(turn.seat);
+            : turn.mustCheck
+                ? Strings.yourTurnForcedCheck
+                : Strings.yourTurnRespond)
+        : (turn.mustCheck
+            ? Strings.forcedCheckTurn(state.nicknameAtSeat(turn.seat))
+            : state.nicknameAtSeat(turn.seat));
     // Graphic-only countdown: the ring is the countdown (no numeric text).
     // Its total is the armed decision window, so it starts full and is
     // pinned full through the animation grace.
@@ -494,20 +513,6 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     );
   }
 
-  // -- Event strip -------------------------------------------------------------
-
-  Widget _eventStrip(ClientGameState state, double scale) {
-    final text = state.lastEventText;
-    if (text == null) return const SizedBox.shrink();
-    return Container(
-      width: double.infinity,
-      color: TrudeColors.surfaceSunken.withValues(alpha: 0.55),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Text(text,
-          textAlign: TextAlign.center, style: _hintSerif(scale: scale)),
-    );
-  }
-
   // -- My hand -----------------------------------------------------------------
 
   Widget _handArea(ClientGameState trueState, ClientGameState rendered,
@@ -516,11 +521,13 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       return SizedBox(key: _anchors.handKey, height: 8);
     }
     final turn = trueState.turn;
+    // Selecting on a respond turn expresses trust (throwing IS trusting);
+    // only a forced check locks the hand.
     final selecting = !busy &&
         _pendingThrow == null &&
         trueState.isMyTurn &&
         turn != null &&
-        (turn.phase == 'lead' || _trusting);
+        (turn.phase == 'lead' || !trueState.mustCheck);
     final maxCount = rules.maxThrowCount(trueState.myHand.length);
     final urgent = trueState.isMyTurn &&
         _remaining(turn) > Duration.zero &&
@@ -557,7 +564,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                 final t = s.turn;
                 if (!s.isMyTurn || t == null || _pendingThrow != null) return;
                 final leading = t.phase == 'lead';
-                if (!leading && !_trusting) return;
+                if (!leading && s.mustCheck) return;
                 final canThrow = _selectedCardIds.isNotEmpty &&
                     _selectedCardIds.length <=
                         rules.maxThrowCount(s.myHand.length) &&
@@ -586,12 +593,12 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       );
     } else if (turn.phase == 'lead') {
       content = _throwUi(state, view, leading: true);
-    } else if (_checking) {
-      content = _checkUi(view);
-    } else if (_trusting) {
-      content = _throwUi(state, view, leading: false);
+    } else if (rules.mustCheck(view)) {
+      content = _mustCheckPanel();
     } else {
-      content = _respondButtons(view);
+      // Buttonless respond turn: tap a laid-down card to check, or throw
+      // your own on top (throwing IS trusting).
+      content = _throwUi(state, view, leading: false);
     }
 
     // The action bar springs up (slide + fade with overshoot) when it
@@ -612,69 +619,24 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     );
   }
 
-  Widget _respondButtons(rules.GameViewLite view) {
-    final trustAllowed = rules.canTrust(view);
+  /// Forced check: the only legal move is flipping a laid-down card, so the
+  /// action area just says why (emphasized) and how.
+  Widget _mustCheckPanel() {
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _ParlorButton(
-                  label: Strings.trust,
-                  onPressed: trustAllowed
-                      ? () => setState(() => _trusting = true)
-                      : null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ParlorButton(
-                  label: Strings.check,
-                  primary: true,
-                  onPressed: () => setState(() => _checking = true),
-                ),
-              ),
-            ],
+          Text(
+            Strings.mustCheckReason,
+            textAlign: TextAlign.center,
+            style: _hintSerif().copyWith(color: TrudeColors.textPrimary),
           ),
-          if (rules.mustCheck(view))
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                Strings.mustCheckReason,
-                textAlign: TextAlign.center,
-                style: _hintSerif(),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _checkUi(rules.GameViewLite view) {
-    final count = rules.lastThrowCount(view);
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(Strings.tapCardToFlip, style: _hintSerif()),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < count; i++)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: InkWell(
-                    onTap: () => _flip(i),
-                    borderRadius: BorderRadius.circular(6),
-                    child: const TrudeCardBack(width: 48),
-                  ),
-                ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            Strings.tapCardToFlip,
+            textAlign: TextAlign.center,
+            style: _hintSerif(),
           ),
         ],
       ),
@@ -683,10 +645,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
 
   /// «ТРИ СЕМЁРКИ» / "THREE SEVENS" — the claim-callout string without the
   /// trailing stamp "!", for the THROW button label.
-  String _claimLabel(int count, String rank) {
-    final claim = Strings.claimCallout(count, rank);
-    return claim.endsWith('!') ? claim.substring(0, claim.length - 1) : claim;
-  }
+  String _claimLabel(int count, String rank) => Strings.claimBody(count, rank);
 
   /// Smart claim default: while the player has not tapped a rank chip this
   /// turn, the chosen rank tracks the majority rank of the selected cards
@@ -732,7 +691,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(Strings.selectCardsHint,
+          Text(leading ? Strings.selectCardsHint : Strings.respondChoiceHint,
               textAlign: TextAlign.center, style: _hintSerif()),
           const SizedBox(height: 6),
           if (leading) ...[

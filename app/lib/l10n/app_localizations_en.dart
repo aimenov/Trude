@@ -170,20 +170,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String playingRankLabel(String word) {
-    return 'Playing: $word';
-  }
-
-  @override
-  String get freshPile => 'New pile — leader names a rank';
-
-  @override
-  String get trust => 'TRUST';
-
-  @override
-  String get check => 'CHECK';
-
-  @override
   String get mustCheckReason =>
       'Previous player has no cards left — you must check';
 
@@ -200,7 +186,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourTurnLead => 'Your turn — lead the pile';
 
   @override
-  String get yourTurnRespond => 'Your turn — trust or check';
+  String get yourTurnRespond => 'Your turn — flip a card or throw';
+
+  @override
+  String get yourTurnForcedCheck => 'Your turn — flip a card';
+
+  @override
+  String forcedCheckTurn(String nickname) {
+    return '$nickname must check';
+  }
+
+  @override
+  String get respondChoiceHint =>
+      'Flip one of their cards to call the bluff — or throw your own on top';
 
   @override
   String get selectCardsHint => 'Select up to 3 cards';
@@ -211,8 +209,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String lastThrowLabel(int n) {
-    return 'Last throw: $n';
+  String lastClaimPlaque(String nickname, String claim) {
+    return '$nickname: $claim';
   }
 
   @override
@@ -239,64 +237,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waitingForOpponent => 'Waiting…';
-
-  @override
-  String threwEvent(String nickname, String claim) {
-    return '$nickname threw $claim';
-  }
-
-  @override
-  String liarEvent(String nickname, num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count cards',
-      one: '1 card',
-    );
-    return 'LIAR! $nickname picks up $_temp0';
-  }
-
-  @override
-  String truthEvent(String nickname, num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count cards',
-      one: '1 card',
-    );
-    return 'It was true — $nickname picks up $_temp0';
-  }
-
-  @override
-  String fourDiscardedEvent(String nickname, String claim) {
-    return '$nickname discarded $claim';
-  }
-
-  @override
-  String playerOutEvent(String nickname) {
-    return '$nickname is out — safe!';
-  }
-
-  @override
-  String autoActedEvent(String nickname) {
-    return '$nickname acted on timeout';
-  }
-
-  @override
-  String playerJoinedEvent(String nickname) {
-    return '$nickname joined';
-  }
-
-  @override
-  String playerLeftEvent(String nickname) {
-    return '$nickname left';
-  }
-
-  @override
-  String get gameStartedEvent => 'Game started!';
-
-  @override
-  String get gameOverEventText => 'Game over';
 
   @override
   String seatName(int number) {
@@ -484,28 +424,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'king': 'KING',
       'ace': 'ACE',
       'joker': 'JOKER',
-      'other': '$rank',
-    });
-    return '$_temp0';
-  }
-
-  @override
-  String rankPlural(String rank) {
-    String _temp0 = intl.Intl.selectLogic(rank, {
-      'r2': 'TWOS',
-      'r3': 'THREES',
-      'r4': 'FOURS',
-      'r5': 'FIVES',
-      'r6': 'SIXES',
-      'r7': 'SEVENS',
-      'r8': 'EIGHTS',
-      'r9': 'NINES',
-      'r10': 'TENS',
-      'jack': 'JACKS',
-      'queen': 'QUEENS',
-      'king': 'KINGS',
-      'ace': 'ACES',
-      'joker': 'JOKERS',
       'other': '$rank',
     });
     return '$_temp0';

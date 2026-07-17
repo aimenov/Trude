@@ -22,6 +22,7 @@ import 'package:trude/core/storage/identity_providers.dart';
 import 'package:trude/core/theme/trude_theme.dart';
 import 'package:trude/features/game/widgets/card_widgets.dart';
 import 'package:trude/features/game/widgets/my_hand.dart';
+import 'package:trude/features/game/widgets/pile_stack.dart';
 import 'package:trude/features/nickname/nickname_screen.dart';
 
 Future<void> _loadFonts() async {
@@ -160,6 +161,26 @@ void main() {
     await tester.pump();
     await expectLater(
         _stageFinder, matchesGoldenFile('goldens/my_hand_fan.png'));
+  });
+
+  testWidgets('pile with a tappable laid-down row', (tester) async {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(320, 220);
+    addTearDown(tester.view.reset);
+
+    // Speed off: no shimmer/breathing tickers, fully deterministic pixels.
+    await tester.pumpWidget(_stage(
+      PileStack(
+        count: 7,
+        lastThrowCount: 3,
+        rank: '7',
+        speed: AnimationSpeed.off,
+        onRowCardTap: (_) {},
+      ),
+    ));
+    await tester.pump();
+    await expectLater(
+        _stageFinder, matchesGoldenFile('goldens/pile_laid_row.png'));
   });
 
   testWidgets('nickname screen scaffold', (tester) async {

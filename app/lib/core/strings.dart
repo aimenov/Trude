@@ -97,20 +97,23 @@ abstract final class Strings {
       _l.configLine(deckSize, turnTimerSec, maxPlayers);
 
   // Game table
-  static String playingRank(String rank) =>
-      _l.playingRankLabel(rankWordPlural(rank));
-  static String get freshPile => _l.freshPile;
-  static String get trust => _l.trust;
-  static String get check => _l.check;
   static String get mustCheckReason => _l.mustCheckReason;
   static String get throwButton => _l.throwButton;
   static String get claimRankLabel => _l.claimRankLabel;
   static String get tapCardToFlip => _l.tapCardToFlip;
   static String get yourTurnLead => _l.yourTurnLead;
   static String get yourTurnRespond => _l.yourTurnRespond;
+  static String get yourTurnForcedCheck => _l.yourTurnForcedCheck;
+  static String forcedCheckTurn(String nickname) =>
+      _l.forcedCheckTurn(nickname);
+  static String get respondChoiceHint => _l.respondChoiceHint;
   static String get selectCardsHint => _l.selectCardsHint;
   static String pileCount(int n) => _l.pileCount(n);
-  static String lastThrowLabel(int n) => _l.lastThrowLabel(n);
+
+  /// «Вася: ТРИ СЕМЁРКИ» — the standing claim engraved under the laid-down
+  /// row; [claim] comes from [claimBody].
+  static String lastClaimPlaque(String nickname, String claim) =>
+      _l.lastClaimPlaque(nickname, claim);
   static String retiredRanksLabel(String ranks) => _l.retiredRanksLabel(ranks);
   static String get noRetiredRanks => _l.noRetiredRanks;
   static String countdown(int seconds) => _l.countdown(seconds);
@@ -119,23 +122,7 @@ abstract final class Strings {
   static String get autoPilotBadge => _l.autoPilotBadge;
   static String get waitingForOpponent => _l.waitingForOpponent;
 
-  // Event feed
-  static String threwEvent(String nickname, int count, String rank) =>
-      _l.threwEvent(nickname, _claimLower(count, rank));
-  static String liarEvent(String nickname, int count) =>
-      _l.liarEvent(nickname, count);
-  static String truthEvent(String nickname, int count) =>
-      _l.truthEvent(nickname, count);
-  static String fourDiscardedEvent(String nickname, String rank) =>
-      _l.fourDiscardedEvent(nickname, _claimLower(4, rank));
-  static String playerOutEvent(String nickname) => _l.playerOutEvent(nickname);
-  static String autoActedEvent(String nickname) => _l.autoActedEvent(nickname);
-  static String playerJoinedEvent(String nickname) =>
-      _l.playerJoinedEvent(nickname);
-  static String playerLeftEvent(String nickname) =>
-      _l.playerLeftEvent(nickname);
-  static String get gameStartedEvent => _l.gameStartedEvent;
-  static String get gameOverEventText => _l.gameOverEventText;
+  // Seats
   static String seatName(int seat) => _l.seatName(seat + 1);
 
   // Set pieces (animation pass)
@@ -151,7 +138,7 @@ abstract final class Strings {
 
   /// "FOUR SEVENS OUT!" / "ЧЕТЫРЕ СЕМЁРКИ — В СБРОС!"
   static String quadBanner(String rank) =>
-      _l.quadBannerWrap(_claimBody(4, rank));
+      _l.quadBannerWrap(claimBody(4, rank));
 
   static String jokerStaysWith(String nickname) => _l.jokerStaysWith(nickname);
 
@@ -250,18 +237,12 @@ abstract final class Strings {
   /// "7" -> "SEVEN" / "СЕМЁРКА" (dropdowns, pile label).
   static String rankWord(String rank) => _l.rankWord(_rankKey(rank));
 
-  /// "7" -> "SEVENS" / "СЕМЁРКИ" (nominative plural, unbounded).
-  static String rankWordPlural(String rank) => _l.rankPlural(_rankKey(rank));
-
   /// Claim text without the trailing "!" ("FOUR SEVENS" / "ЧЕТЫРЕ СЕМЁРКИ").
-  static String _claimBody(int count, String rank) {
+  /// Reuses the [claimCallout] ICU, so RU numeral+noun agreement holds.
+  static String claimBody(int count, String rank) {
     final claim = claimCallout(count, rank);
     return claim.endsWith('!') ? claim.substring(0, claim.length - 1) : claim;
   }
-
-  /// Lowercased claim for the event feed ("two sevens" / "две семёрки").
-  static String _claimLower(int count, String rank) =>
-      _claimBody(count, rank).toLowerCase();
 
   static String _countKey(int n) => switch (n) {
         1 => 'one',

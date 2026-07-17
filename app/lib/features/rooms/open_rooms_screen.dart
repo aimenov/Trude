@@ -162,7 +162,7 @@ class _OpenRoomsScreenState extends ConsumerState<OpenRoomsScreen> {
               padding: const EdgeInsets.all(16),
               itemCount: rooms.length,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => _RoomCard(
+              itemBuilder: (context, i) => RoomCard(
                 room: rooms[i],
                 onJoin: _busy ? null : () => _join(rooms[i]),
               ),
@@ -209,8 +209,8 @@ class _EmptyParlor extends StatelessWidget {
 
 /// One room as a felt-swatch card: mini felt gradient, serif room name,
 /// ivory seat chips, a tiny fanned deck icon, and a brass join button.
-class _RoomCard extends StatelessWidget {
-  const _RoomCard({required this.room, this.onJoin});
+class RoomCard extends StatelessWidget {
+  const RoomCard({super.key, required this.room, this.onJoin});
 
   final RoomListing room;
   final VoidCallback? onJoin;
@@ -260,8 +260,17 @@ class _RoomCard extends StatelessWidget {
                   const SizedBox(height: 7),
                   Row(
                     children: [
-                      _SeatChips(
-                          players: room.players, maxPlayers: room.maxPlayers),
+                      // Up to 8 fixed-size chips can't shrink on their own:
+                      // scale the row down instead of overflowing.
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: _SeatChips(
+                              players: room.players,
+                              maxPlayers: room.maxPlayers),
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
@@ -344,6 +353,7 @@ class _DeckFanIcon extends StatelessWidget {
       width: 46,
       height: 54,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
             width: 46,
@@ -360,8 +370,10 @@ class _DeckFanIcon extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             Strings.deckBadge(deckSize),
+            // height 1.0: the serif's implicit line height (~16px at 11px)
+            // busts the 54px budget by 1px otherwise.
             style: TrudeType.etched.copyWith(
-                fontSize: 11, letterSpacing: 1.5,
+                fontSize: 11, letterSpacing: 1.5, height: 1.0,
                 color: TrudeColors.brassBright),
           ),
         ],
