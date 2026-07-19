@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/audio/sfx_service.dart';
 import '../../core/motion/animation_speed.dart';
@@ -47,7 +48,10 @@ class SettingsScreen extends ConsumerWidget {
     return ParlorBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(Strings.settingsTitle)),
+        appBar: AppBar(
+          title: Text(Strings.settingsTitle),
+          leading: BackButton(onPressed: () => context.go('/home')),
+        ),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),

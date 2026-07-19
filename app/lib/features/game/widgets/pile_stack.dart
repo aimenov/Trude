@@ -203,7 +203,10 @@ class PileStackState extends State<PileStack> with TickerProviderStateMixin {
     // the anchor must never drift, and the layout must never jump.
     final area = Size(max(w * 2.2, 3 * w + 2 * 8), w * kCardAspect * 1.7);
 
-    return SizedBox(
+    // Boundary: shimmer/settle/nudge repaints stay inside the pile — they
+    // must not invalidate the rest of the center column.
+    return RepaintBoundary(
+        child: SizedBox(
       width: area.width,
       height: area.height,
       child: Stack(
@@ -239,7 +242,7 @@ class PileStackState extends State<PileStack> with TickerProviderStateMixin {
             ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _pileCard(int i, int rendered, double w) {

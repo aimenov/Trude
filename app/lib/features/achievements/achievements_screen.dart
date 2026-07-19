@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/net/meta_models.dart';
 import '../../core/net/meta_providers.dart';
@@ -24,6 +25,7 @@ class AchievementsScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text(Strings.achievementsTitle),
+          leading: BackButton(onPressed: () => context.go('/home')),
           bottom: achievements.valueOrNull == null
               ? null
               : PreferredSize(

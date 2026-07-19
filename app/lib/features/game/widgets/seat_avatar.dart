@@ -5,6 +5,7 @@
 /// caught lying.
 library;
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -23,7 +24,7 @@ class SeatAvatar extends StatefulWidget {
     super.key,
     required this.player,
     required this.isTurn,
-    required this.remaining,
+    this.deadlineTs,
     required this.turnTotal,
     required this.speed,
     required this.anchors,
@@ -32,8 +33,10 @@ class SeatAvatar extends StatefulWidget {
   final PlayerView player;
   final bool isTurn;
 
-  /// Time left on the active turn (zero when not their turn).
-  final Duration remaining;
+  /// Turn deadline (epoch ms) when it's this seat's turn; null otherwise.
+  /// The avatar ticks its own countdown from it — the parent screen no
+  /// longer rebuilds 4x/s to drain the arc.
+  final int? deadlineTs;
   final Duration turnTotal;
   final AnimationSpeed speed;
   final TableAnchors anchors;
@@ -54,10 +57,15 @@ class _SeatAvatarState extends State<SeatAvatar>
   late final AnimationController _shake = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 450));
 
+  /// Drains the countdown arc; runs only while it's this seat's turn (one
+  /// active seat at a time), self-cancels past the deadline and on dispose.
+  Timer? _countdown;
+
   @override
   void initState() {
     super.initState();
     _syncIdle();
+    _syncCountdown();
     widget.anchors.shake.addListener(_onShake);
   }
 
@@ -65,6 +73,33 @@ class _SeatAvatarState extends State<SeatAvatar>
   void didUpdateWidget(SeatAvatar old) {
     super.didUpdateWidget(old);
     if (old.isTurn != widget.isTurn || old.speed != widget.speed) _syncIdle();
+    if (old.isTurn != widget.isTurn || old.deadlineTs != widget.deadlineTs) {
+      _syncCountdown();
+    }
+  }
+
+  void _syncCountdown() {
+    _countdown?.cancel();
+    _countdown = null;
+    if (!widget.isTurn || widget.deadlineTs == null || _remainingMs() <= 0) {
+      return;
+    }
+    _countdown = Timer.periodic(const Duration(milliseconds: 250), (_) {
+      if (!mounted) return;
+      if (_remainingMs() <= 0) {
+        // One last rebuild draws the empty arc, then the timer stops.
+        _countdown?.cancel();
+        _countdown = null;
+      }
+      setState(() {});
+    });
+  }
+
+  /// Milliseconds until [SeatAvatar.deadlineTs] (never negative).
+  int _remainingMs() {
+    final deadline = widget.deadlineTs;
+    if (deadline == null) return 0;
+    return max(0, deadline - DateTime.now().millisecondsSinceEpoch);
   }
 
   void _syncIdle() {
@@ -90,6 +125,7 @@ class _SeatAvatarState extends State<SeatAvatar>
 
   @override
   void dispose() {
+    _countdown?.cancel();
     widget.anchors.shake.removeListener(_onShake);
     _ring.dispose();
     _bob.dispose();
@@ -166,16 +202,19 @@ class _SeatAvatarState extends State<SeatAvatar>
                 painter: _TurnRingPainter(rotation: _ring.value * 2 * pi),
               ),
             ),
-          if (widget.isTurn && widget.turnTotal > Duration.zero)
+          if (widget.isTurn &&
+              widget.deadlineTs != null &&
+              widget.turnTotal > Duration.zero)
             SizedBox(
               width: ringSize - 2,
               height: ringSize - 2,
               child: CustomPaint(
                 painter: CountdownRingPainter(
-                  fraction: (widget.remaining.inMilliseconds /
-                          widget.turnTotal.inMilliseconds)
-                      .clamp(0.0, 1.0),
-                  color: countdownColor(widget.remaining, scheme),
+                  fraction:
+                      (_remainingMs() / widget.turnTotal.inMilliseconds)
+                          .clamp(0.0, 1.0),
+                  color: countdownColor(
+                      Duration(milliseconds: _remainingMs()), scheme),
                   trackColor: Colors.transparent,
                   strokeWidth: 3.5,
                 ),
@@ -216,33 +255,38 @@ class _SeatAvatarState extends State<SeatAvatar>
 
   Widget _badgesRow(ThemeData theme) {
     final player = widget.player;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Count chip pulses whenever the (rendered) count changes.
-        TweenAnimationBuilder<double>(
-          key: ValueKey(player.cardCount),
-          tween: Tween(begin: 1.35, end: 1.0),
-          duration: widget.speed.scale(const Duration(milliseconds: 240)),
-          curve: Curves.easeOutBack,
-          builder: (context, scale, child) =>
-              Transform.scale(scale: scale, child: child),
-          child: _countChip(player.cardCount),
-        ),
-        if (player.isOut)
-          Padding(
-            padding: const EdgeInsets.only(left: 3),
-            child: Text(
+    // scaleDown: identity at natural size, shrinks only under overflow —
+    // regression-proof for any badge/icon combination at the 86px seat width.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!player.isOut)
+            // Count chip pulses whenever the (rendered) count changes. An out
+            // player shows no chip — «ВЫШЕЛ» already says it all.
+            TweenAnimationBuilder<double>(
+              key: ValueKey(player.cardCount),
+              tween: Tween(begin: 1.35, end: 1.0),
+              duration: widget.speed.scale(const Duration(milliseconds: 240)),
+              curve: Curves.easeOutBack,
+              builder: (context, scale, child) =>
+                  Transform.scale(scale: scale, child: child),
+              child: _countChip(player.cardCount),
+            )
+          else
+            Text(
               Strings.outBadge,
               style: TrudeType.etched
                   .copyWith(fontSize: 9, letterSpacing: 1.2, height: 1.2),
             ),
-          ),
-        if (!player.connected)
-          const Icon(Icons.power_off, size: 14, color: TrudeColors.textMuted)
-        else if (player.autoPilot)
-          const Icon(Icons.smart_toy, size: 14, color: TrudeColors.textMuted),
-      ],
+          if (!player.connected)
+            const Icon(Icons.power_off, size: 14, color: TrudeColors.textMuted)
+          else if (player.autoPilot)
+            const Icon(Icons.smart_toy,
+                size: 14, color: TrudeColors.textMuted),
+        ],
+      ),
     );
   }
 
@@ -284,47 +328,78 @@ class _SeatAvatarState extends State<SeatAvatar>
 }
 
 /// Rotating brass sweep with a soft outer glow around the active player.
+///
+/// Perf: no MaskFilter.blur (a saveLayer per frame on some backends) — the
+/// glow is two concentric un-blurred sweep strokes under the crisp ring. The
+/// shaders are built once, statically, WITHOUT GradientRotation (the ring is
+/// a const 52px square); the canvas rotates instead, so nothing is recreated
+/// per frame.
 class _TurnRingPainter extends CustomPainter {
   _TurnRingPainter({required this.rotation});
 
   final double rotation;
 
-  static const _glowBlur = MaskFilter.blur(BlurStyle.normal, 4);
+  static final Rect _shaderRect =
+      (Offset.zero & const Size.square(52)).deflate(1.5);
+
+  static final Shader _ringShader = SweepGradient(
+    colors: [
+      TrudeColors.brass.withValues(alpha: 0.05),
+      TrudeColors.brassBright,
+      TrudeColors.brass.withValues(alpha: 0.05),
+    ],
+    stops: const [0.0, 0.55, 1.0],
+  ).createShader(_shaderRect);
+
+  /// Wide, faint halo stroke (outer part of the old blur).
+  static final Shader _glowWideShader = SweepGradient(
+    colors: [
+      TrudeColors.brassBright.withValues(alpha: 0.0),
+      TrudeColors.brassBright.withValues(alpha: 0.14),
+      TrudeColors.brassBright.withValues(alpha: 0.0),
+    ],
+    stops: const [0.0, 0.55, 1.0],
+  ).createShader(_shaderRect);
+
+  /// Narrower, stronger core glow stroke (inner part of the old blur).
+  static final Shader _glowMidShader = SweepGradient(
+    colors: [
+      TrudeColors.brassBright.withValues(alpha: 0.0),
+      TrudeColors.brassBright.withValues(alpha: 0.22),
+      TrudeColors.brassBright.withValues(alpha: 0.0),
+    ],
+    stops: const [0.0, 0.55, 1.0],
+  ).createShader(_shaderRect);
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = (Offset.zero & size).deflate(1.5);
-    final shader = SweepGradient(
-      colors: [
-        TrudeColors.brass.withValues(alpha: 0.05),
-        TrudeColors.brassBright,
-        TrudeColors.brass.withValues(alpha: 0.05),
-      ],
-      stops: const [0.0, 0.55, 1.0],
-      transform: GradientRotation(rotation),
-    ).createShader(rect);
+    final center = rect.center;
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+    canvas.translate(-center.dx, -center.dy);
 
-    // Soft glow underneath, then the crisp brass sweep.
-    final glow = Paint()
+    // Layered un-blurred glow underneath, then the crisp brass sweep.
+    final glowWide = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..maskFilter = _glowBlur
-      ..shader = SweepGradient(
-        colors: [
-          TrudeColors.brassBright.withValues(alpha: 0.0),
-          TrudeColors.brassBright.withValues(alpha: 0.35),
-          TrudeColors.brassBright.withValues(alpha: 0.0),
-        ],
-        stops: const [0.0, 0.55, 1.0],
-        transform: GradientRotation(rotation),
-      ).createShader(rect);
-    canvas.drawArc(rect, 0, 2 * pi, false, glow);
+      ..strokeWidth = 7
+      ..shader = _glowWideShader;
+    canvas.drawArc(rect, 0, 2 * pi, false, glowWide);
+
+    final glowMid = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.5
+      ..shader = _glowMidShader;
+    canvas.drawArc(rect, 0, 2 * pi, false, glowMid);
 
     final ring = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
-      ..shader = shader;
+      ..shader = _ringShader;
     canvas.drawArc(rect, 0, 2 * pi, false, ring);
+
+    canvas.restore();
   }
 
   @override

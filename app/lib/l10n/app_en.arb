@@ -22,6 +22,9 @@
   "join": "Join",
   "cancel": "Cancel",
   "roomNotFound": "Room not found",
+  "roomFull": "Room is full",
+  "joinFailedGeneric": "Couldn't join. Check the code and try again.",
+  "joinCodeDialogHint": "The room creator has the code — shown in their lobby and at the table",
 
   "createRoomTitle": "Create a room",
   "roomNameHint": "Room name",
@@ -31,13 +34,12 @@
   "create": "Create",
   "deckOption": "{size, plural, =1{{size} card} other{{size} cards}}",
   "@deckOption": { "placeholders": { "size": { "type": "num" } } },
+  "createFailedGeneric": "Couldn't create the room. Try again.",
 
   "openRoomsTitle": "Open rooms",
   "noRoomsYet": "No open rooms yet — create one!",
   "playersOf": "{players}/{max} players",
   "@playersOf": { "placeholders": { "players": { "type": "int" }, "max": { "type": "int" } } },
-  "joinFailed": "Could not join: {reason}",
-  "@joinFailed": { "placeholders": { "reason": { "type": "String" } } },
 
   "lobbyTitle": "Lobby",
   "start": "Start",
@@ -49,6 +51,7 @@
   "youBadge": "You",
   "roomCodeLabel": "Room code: {code}",
   "@roomCodeLabel": { "placeholders": { "code": { "type": "String" } } },
+  "shareCodeHint": "Share this code — friends join with it",
   "secondsOption": "{s}s",
   "@secondsOption": { "placeholders": { "s": { "type": "int" } } },
   "swapAsk": "Request a seat swap with {nickname}?",
@@ -87,6 +90,9 @@
   "offlineBadge": "offline",
   "autoPilotBadge": "auto",
   "waitingForOpponent": "Waiting…",
+  "leaveGameTitle": "Leave the game?",
+  "leaveGameBody": "A bot will take your seat.",
+  "leaveGameConfirm": "Leave",
 
   "seatName": "Seat {number}",
   "@seatName": { "placeholders": { "number": { "type": "int" } } },

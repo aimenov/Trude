@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/net/connection_providers.dart';
+import '../../core/net/error_messages.dart';
 import '../../core/net/meta_providers.dart';
 import '../../core/storage/identity_providers.dart';
 import '../../core/strings.dart';
@@ -29,15 +30,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  Future<void> _guarded(Future<void> Function() action) async {
+  Future<void> _guarded(Future<void> Function() action,
+      {required bool creating}) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       await action();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(Strings.joinFailed('$e'))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(friendlyRoomError(e, creating: creating))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -51,7 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           defaultName: ref.read(identityProvider)?.nickname ?? ''),
     );
     if (config == null) return;
-    await _guarded(() async {
+    await _guarded(creating: true, () async {
       await ref.read(currentRoomProvider.notifier).createRoom(
             name: config.name,
             private: config.private,
@@ -67,7 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (_) => const _JoinByCodeDialog(),
     );
     if (code == null || code.isEmpty) return;
-    await _guarded(() async {
+    await _guarded(creating: false, () async {
       await ref.read(currentRoomProvider.notifier).joinByCode(code);
       if (mounted) context.go('/lobby');
     });
@@ -411,16 +413,34 @@ class _JoinByCodeDialogState extends State<_JoinByCodeDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(Strings.joinByCodeTitle),
-      content: TextField(
-        controller: _code,
-        autofocus: true,
-        maxLength: 6,
-        textCapitalization: TextCapitalization.characters,
-        style: TrudeType.cardIndex.copyWith(
-            fontSize: 20, letterSpacing: 4, color: TrudeColors.textPrimary),
-        textAlign: TextAlign.center,
-        decoration: InputDecoration(labelText: Strings.roomCodeHint),
-        onSubmitted: (v) => Navigator.of(context).pop(v.trim().toUpperCase()),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _code,
+            autofocus: true,
+            maxLength: 6,
+            textCapitalization: TextCapitalization.characters,
+            style: TrudeType.cardIndex.copyWith(
+                fontSize: 20, letterSpacing: 4, color: TrudeColors.textPrimary),
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(labelText: Strings.roomCodeHint),
+            onSubmitted: (v) =>
+                Navigator.of(context).pop(v.trim().toUpperCase()),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            Strings.joinCodeDialogHint,
+            textAlign: TextAlign.center,
+            style: TrudeType.cardIndex.copyWith(
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w400,
+              fontSize: 12.5,
+              color: TrudeColors.textMuted,
+              height: 1.35,
+            ),
+          ),
+        ],
       ),
       actions: [
         TextButton(

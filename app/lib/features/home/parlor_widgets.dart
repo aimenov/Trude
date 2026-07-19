@@ -81,7 +81,16 @@ class ParlorPanel extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      // A transparent Material between the opaque panel and any ink-splashing
+      // descendants (ListTile & co.): ink paints above the panel color and
+      // clips to the rounded corners, and Flutter's "ink may be invisible"
+      // debug check stays quiet.
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: BorderRadius.circular(TrudeDims.panelRadius),
+        clipBehavior: Clip.antiAlias,
+        child: child,
+      ),
     );
   }
 }

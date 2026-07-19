@@ -20,6 +20,9 @@
   "join": "Войти",
   "cancel": "Отмена",
   "roomNotFound": "Комната не найдена",
+  "roomFull": "Комната заполнена",
+  "joinFailedGeneric": "Не удалось подключиться. Проверь код и попробуй ещё раз.",
+  "joinCodeDialogHint": "Код у создателя комнаты — в лобби и за столом",
 
   "createRoomTitle": "Новая комната",
   "roomNameHint": "Название комнаты",
@@ -28,11 +31,11 @@
   "deckLabel": "Колода",
   "create": "Создать",
   "deckOption": "{size, plural, one{{size} карта} few{{size} карты} many{{size} карт} other{{size} карты}}",
+  "createFailedGeneric": "Не удалось создать комнату. Попробуй ещё раз.",
 
   "openRoomsTitle": "Открытые комнаты",
   "noRoomsYet": "Открытых комнат пока нет — создай свою!",
   "playersOf": "{players}/{max} игроков",
-  "joinFailed": "Не удалось подключиться: {reason}",
 
   "lobbyTitle": "Лобби",
   "start": "Начать",
@@ -43,6 +46,7 @@
   "adminBadge": "Админ",
   "youBadge": "Ты",
   "roomCodeLabel": "Код комнаты: {code}",
+  "shareCodeHint": "Поделись кодом — по нему заходят друзья",
   "secondsOption": "{s} с",
   "swapAsk": "Предложить {nickname} поменяться местами?",
   "requestSwap": "Предложить обмен",
@@ -72,6 +76,9 @@
   "offlineBadge": "не в сети",
   "autoPilotBadge": "авто",
   "waitingForOpponent": "Ждём…",
+  "leaveGameTitle": "Покинуть игру?",
+  "leaveGameBody": "Твоё место займёт бот.",
+  "leaveGameConfirm": "Покинуть",
 
   "seatName": "Место {number}",
 
@@ -119,5 +126,5 @@
   "achievementsLoadFailed": "Не удалось загрузить — потяни, чтобы обновить",
 
   "achievementTitle": "{key, select, best_liar{Лучший лжец} pathological_truther{Патологически честный} human_polygraph{Ходячий полиграф} gullible{Доверчивый} poker_face{Покерфейс} smuggler{Контрабандист} hot_potato{Горячая картошка} jokers_best_friend{Лучший друг джокера} demolition_crew{Подрывник} comeback_season{Камбэк сезона} serial_winner{Серийный победитель} it_wasnt_me{Это не я} other{~}}",
-  "achievementDescription": "{key, select, best_liar{Выиграй 10 партий} pathological_truther{Выиграй партию, ни разу не соврав (не меньше 8 честных бросков)} human_polygraph{Поймай 25 лжецов} gullible{Открой правдивую карту 15 раз} poker_face{Соври 50 раз — и пусть никто не заметит} smuggler{Подсунь джокера чужому игроку 10 раз} hot_potato{Передай джокера дважды за одну партию} jokers_best_friend{Проиграй 5 партий — джокер тебя просто любит} demolition_crew{Сбрось четыре одинаковых 10 раз} comeback_season{Выиграй партию, подержав в руке 20 и больше карт} serial_winner{Выиграй 3 партии подряд} it_wasnt_me{Выиграй партию, соврав хотя бы трижды и ни разу не попавшись} other{~}}"
+  "achievementDescription": "{key, select, best_liar{Выиграй 10 партий} pathological_truther{Выиграй партию, ни разу не соврав (не меньше 8 честных бросков)} human_polygraph{Поймай 25 лжецов} gullible{Открой правдивую карту 15 раз} poker_face{Соври 50 раз — и пусть никто не заметит} smuggler{Подсунь джокера 10 раз} hot_potato{Передай джокера дважды за одну партию} jokers_best_friend{Проиграй 5 партий — джокер тебя просто любит} demolition_crew{Сбрось четыре одинаковых 10 раз} comeback_season{Выиграй партию, подержав в руке 20 и больше карт} serial_winner{Выиграй 3 партии подряд} it_wasnt_me{Выиграй партию, соврав хотя бы трижды и ни разу не попавшись} other{~}}"
 }

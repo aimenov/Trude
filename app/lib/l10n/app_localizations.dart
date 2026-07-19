@@ -194,6 +194,24 @@ abstract class AppLocalizations {
   /// **'Room not found'**
   String get roomNotFound;
 
+  /// No description provided for @roomFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Room is full'**
+  String get roomFull;
+
+  /// No description provided for @joinFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t join. Check the code and try again.'**
+  String get joinFailedGeneric;
+
+  /// No description provided for @joinCodeDialogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The room creator has the code — shown in their lobby and at the table'**
+  String get joinCodeDialogHint;
+
   /// No description provided for @createRoomTitle.
   ///
   /// In en, this message translates to:
@@ -236,6 +254,12 @@ abstract class AppLocalizations {
   /// **'{size, plural, =1{{size} card} other{{size} cards}}'**
   String deckOption(num size);
 
+  /// No description provided for @createFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the room. Try again.'**
+  String get createFailedGeneric;
+
   /// No description provided for @openRoomsTitle.
   ///
   /// In en, this message translates to:
@@ -253,12 +277,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{players}/{max} players'**
   String playersOf(int players, int max);
-
-  /// No description provided for @joinFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not join: {reason}'**
-  String joinFailed(String reason);
 
   /// No description provided for @lobbyTitle.
   ///
@@ -313,6 +331,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Room code: {code}'**
   String roomCodeLabel(String code);
+
+  /// No description provided for @shareCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this code — friends join with it'**
+  String get shareCodeHint;
 
   /// No description provided for @secondsOption.
   ///
@@ -481,6 +505,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting…'**
   String get waitingForOpponent;
+
+  /// No description provided for @leaveGameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the game?'**
+  String get leaveGameTitle;
+
+  /// No description provided for @leaveGameBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A bot will take your seat.'**
+  String get leaveGameBody;
+
+  /// No description provided for @leaveGameConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leaveGameConfirm;
 
   /// No description provided for @seatName.
   ///

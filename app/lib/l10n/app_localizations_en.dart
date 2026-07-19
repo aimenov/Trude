@@ -61,6 +61,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roomNotFound => 'Room not found';
 
   @override
+  String get roomFull => 'Room is full';
+
+  @override
+  String get joinFailedGeneric =>
+      'Couldn\'t join. Check the code and try again.';
+
+  @override
+  String get joinCodeDialogHint =>
+      'The room creator has the code — shown in their lobby and at the table';
+
+  @override
   String get createRoomTitle => 'Create a room';
 
   @override
@@ -90,6 +101,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get createFailedGeneric => 'Couldn\'t create the room. Try again.';
+
+  @override
   String get openRoomsTitle => 'Open rooms';
 
   @override
@@ -98,11 +112,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String playersOf(int players, int max) {
     return '$players/$max players';
-  }
-
-  @override
-  String joinFailed(String reason) {
-    return 'Could not join: $reason';
   }
 
   @override
@@ -133,6 +142,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String roomCodeLabel(String code) {
     return 'Room code: $code';
   }
+
+  @override
+  String get shareCodeHint => 'Share this code — friends join with it';
 
   @override
   String secondsOption(int s) {
@@ -237,6 +249,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waitingForOpponent => 'Waiting…';
+
+  @override
+  String get leaveGameTitle => 'Leave the game?';
+
+  @override
+  String get leaveGameBody => 'A bot will take your seat.';
+
+  @override
+  String get leaveGameConfirm => 'Leave';
 
   @override
   String seatName(int number) {

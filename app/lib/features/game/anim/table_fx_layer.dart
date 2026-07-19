@@ -313,6 +313,9 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
       children: [
         if (reveal != null && reveal.step.event is CheckResultEvent)
           RevealOverlay(
+            // Per-step identity: back-to-back reveals must get a fresh State
+            // (a reused Element would never re-run initState/forward()).
+            key: ObjectKey(reveal),
             event: reveal.step.event! as CheckResultEvent,
             cardCount: max(
                 reveal.before.lastThrowCount,
@@ -332,6 +335,9 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
           ),
         if (quad != null && quad.step.event is FourDiscardedEvent)
           QuadCelebration(
+            // Per-step identity: without it, back-to-back quads reuse the
+            // State, the controller stays at 1.0 and the square parks forever.
+            key: ObjectKey(quad),
             event: quad.step.event! as FourDiscardedEvent,
             duration: quad.duration,
             fromRect: _anchors.originForSeat(
@@ -344,6 +350,8 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
           ),
         if (gameOver != null && gameOver.step.event is GameOverEvent)
           GameOverOverlay(
+            // Per-step identity, same latent bug class as the quad above.
+            key: ObjectKey(gameOver),
             event: gameOver.step.event! as GameOverEvent,
             loserName: gameOver.before.nicknameAtSeat(
                 (gameOver.step.event! as GameOverEvent).loserSeat),
@@ -356,7 +364,7 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
               }
             },
           ),
-        CardFlightLayer(controller: _flights),
+        RepaintBoundary(child: CardFlightLayer(controller: _flights)),
         for (final callout in _callouts)
           Positioned(
             left: callout.position.dx - origin.dx - 70,
@@ -374,7 +382,7 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
               ),
             ),
           ),
-        EmojiBurstLayer(controller: _bursts),
+        RepaintBoundary(child: EmojiBurstLayer(controller: _bursts)),
       ],
     );
   }
@@ -439,7 +447,15 @@ class _TableFeltBackgroundState extends State<TableFeltBackground>
         animation: _flicker,
         builder: (context, _) => CustomPaint(
           isComplex: true,
-          painter: _FeltPainter(phase: _flicker.value, layers: _layers),
+          painter: _FeltPainter(
+            // Quantized to feltFlickerSteps so shouldRepaint rejects frames
+            // between steps — the two full-screen gradients repaint at
+            // period/steps (~10 Hz) instead of every vsync.
+            phase: (_flicker.value * TableMotionSpec.feltFlickerSteps)
+                    .floor() /
+                TableMotionSpec.feltFlickerSteps,
+            layers: _layers,
+          ),
           size: Size.infinite,
         ),
       ),

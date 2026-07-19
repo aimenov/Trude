@@ -118,8 +118,23 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                if (state.roomCode != null)
+                if (state.roomCode != null) ...[
                   Center(child: _RoomCodePlate(code: state.roomCode!)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      Strings.shareCodeHint,
+                      textAlign: TextAlign.center,
+                      style: TrudeType.cardIndex.copyWith(
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 12.5,
+                        color: TrudeColors.textMuted,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
                 if (swap != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),

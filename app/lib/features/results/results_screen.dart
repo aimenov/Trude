@@ -28,7 +28,10 @@ class ResultsScreen extends ConsumerWidget {
     return ParlorBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(Strings.resultsTitle)),
+        appBar: AppBar(
+          title: Text(Strings.resultsTitle),
+          leading: BackButton(onPressed: () => context.go('/home')),
+        ),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),

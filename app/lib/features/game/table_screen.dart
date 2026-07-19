@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Card;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,11 +17,11 @@ import 'anim/table_anchors.dart';
 import 'anim/table_fx_layer.dart';
 import 'logic/rules_view.dart' as rules;
 import 'table_scale.dart';
-import 'widgets/countdown_ring.dart';
 import 'widgets/my_hand.dart';
 import 'widgets/pile_stack.dart';
 import 'widgets/rank_strip.dart';
 import 'widgets/seat_avatar.dart';
+import 'widgets/turn_countdown.dart';
 
 class TableScreen extends ConsumerStatefulWidget {
   const TableScreen({super.key});
@@ -73,9 +74,13 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   @override
   void initState() {
     super.initState();
+    // No blanket setState here: countdowns are self-ticking leaves
+    // (SelfTickingCountdownRing / SeatAvatar timers), so the only periodic
+    // work is auto-submit and the one-shot urgency beat.
     _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) {
+      if (!mounted) return;
       _maybeAutoSubmit();
-      setState(() {});
+      _tickUrgency();
     });
     final room = ref.read(currentRoomProvider);
     if (room == null) return;
@@ -267,21 +272,14 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     // up to 1.5 on large web/desktop windows (see tableScale).
     final scale = tableScale(context);
 
-    _signalUrgency(trueState);
-
     return Scaffold(
       appBar: AppBar(
+        leading: BackButton(onPressed: _confirmLeave),
         actions: [
           if (rendered.roomCode != null)
             Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: Text(
-                  rendered.roomCode!,
-                  style: TrudeType.etched
-                      .copyWith(fontSize: 12, letterSpacing: 2.4),
-                ),
-              ),
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(child: _CopyCodeChip(code: rendered.roomCode!)),
             ),
         ],
       ),
@@ -313,7 +311,11 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                       _reactionBar(),
                     ],
                   ),
-                  Positioned.fill(child: TableFxLayer(anchors: _anchors)),
+                  // Boundary: flight-layer per-frame repaints must not
+                  // invalidate the rest of the SafeArea subtree.
+                  Positioned.fill(
+                      child:
+                          RepaintBoundary(child: TableFxLayer(anchors: _anchors))),
                 ],
               ),
             ),
@@ -324,15 +326,43 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   }
 
   /// One-shot urgency beat when MY countdown crosses the amber/red window.
-  void _signalUrgency(ClientGameState trueState) {
+  /// Runs from the ticker (not build): sfx + haptic once, plus a single
+  /// setState that flips [_urgentSignaled] and thereby the hand shiver on.
+  /// [_urgentSignaled] is reset by [_resetTurnUi] on deadline change.
+  void _tickUrgency() {
+    if (_urgentSignaled) return;
+    final trueState = ref.read(gameStateProvider);
     final urgent = trueState.isMyTurn &&
         _remaining(trueState.turn) > Duration.zero &&
         _remaining(trueState.turn) <= MotionSpec.urgentThreshold;
-    if (urgent && !_urgentSignaled) {
-      _urgentSignaled = true;
+    if (urgent) {
       ref.read(sfxProvider).timerUrgent();
       ref.read(hapticsProvider).warning();
+      setState(() => _urgentSignaled = true);
     }
+  }
+
+  /// Leave button (AppBar leading): confirm first — a bot takes the seat.
+  /// On confirm, leave exactly like the lobby's back button does.
+  Future<void> _confirmLeave() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(Strings.leaveGameTitle),
+        content: Text(Strings.leaveGameBody),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(Strings.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(Strings.leaveGameConfirm)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(currentRoomProvider.notifier).leaveRoom();
+    if (mounted) context.go('/home');
   }
 
   // -- Opponents ----------------------------------------------------------------
@@ -364,9 +394,9 @@ class _TableScreenState extends ConsumerState<TableScreen> {
               child: SeatAvatar(
                 player: p,
                 isTurn: state.turn?.seat == p.seat,
-                remaining: state.turn?.seat == p.seat
-                    ? _remaining(state.turn)
-                    : Duration.zero,
+                deadlineTs: state.turn?.seat == p.seat
+                    ? state.turn!.deadlineTs
+                    : null,
                 turnTotal: turnTotal,
                 speed: speed,
                 anchors: _anchors,
@@ -476,7 +506,6 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   Widget _turnLine(ClientGameState state, AnimationSpeed speed, double scale) {
     final turn = state.turn;
     if (turn == null) return const SizedBox.shrink();
-    final remaining = _remaining(turn);
     final who = turn.seat == state.mySeat
         ? (turn.phase == 'lead'
             ? Strings.yourTurnLead
@@ -492,9 +521,11 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        CountdownRing(
-          remaining: remaining,
-          total: Duration(milliseconds: turn.durationMs),
+        // Self-ticking: the ring drains itself off its own 250ms timer; the
+        // screen no longer rebuilds for the countdown.
+        SelfTickingCountdownRing(
+          deadlineTs: turn.deadlineTs,
+          totalMs: turn.durationMs,
           size: 34 * scale,
           strokeWidth: 4.5 * scale,
           // Urgent-window pulse honors the in-app animation-speed setting.
@@ -535,7 +566,10 @@ class _TableScreenState extends ConsumerState<TableScreen> {
 
     return KeyedSubtree(
       key: _anchors.handKey,
-      child: MyHandView(
+      // Boundary: hand shiver/selection repaints stay inside the hand strip.
+      // Boundaries don't affect layout — anchors and flick handoff unaffected.
+      child: RepaintBoundary(
+          child: MyHandView(
         cards: rendered.myHand,
         selectedIds: _selectedCardIds,
         selectable: selecting,
@@ -571,7 +605,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                     (!leading || _chosenRank != null);
                 if (canThrow) _throw(s, leading: leading);
               },
-      ),
+      )),
     );
   }
 
@@ -843,6 +877,65 @@ class _ParlorButtonState extends State<_ParlorButton> {
               color: labelColor,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The labeled tap-to-copy room code in the table AppBar: same etched style
+/// as the old bare code text, plus a small copy glyph that flips to a check
+/// for a moment (mirrors the lobby plate's copy affordance).
+class _CopyCodeChip extends StatefulWidget {
+  const _CopyCodeChip({required this.code});
+
+  final String code;
+
+  @override
+  State<_CopyCodeChip> createState() => _CopyCodeChipState();
+}
+
+class _CopyCodeChipState extends State<_CopyCodeChip> {
+  bool _copied = false;
+  Timer? _revert;
+
+  @override
+  void dispose() {
+    _revert?.cancel();
+    super.dispose();
+  }
+
+  void _copy() {
+    Clipboard.setData(ClipboardData(text: widget.code));
+    setState(() => _copied = true);
+    _revert?.cancel();
+    _revert = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _copied = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: _copy,
+      borderRadius: BorderRadius.circular(TrudeDims.chipRadius),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              Strings.roomCodeLabel(widget.code),
+              style:
+                  TrudeType.etched.copyWith(fontSize: 12, letterSpacing: 2.4),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              _copied ? Icons.check : Icons.copy_outlined,
+              size: 14,
+              color: TrudeColors.brass,
+            ),
+          ],
         ),
       ),
     );

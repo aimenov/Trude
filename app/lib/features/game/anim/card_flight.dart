@@ -259,6 +259,11 @@ class _ActiveFlight {
 
   final CardFlightSpec spec;
 
+  /// The flight's card widget, built once per flight: an identical instance
+  /// across frames lets Element.update short-circuit, so per-frame work is
+  /// only the Positioned/Transform churn around it.
+  late final Widget card = spec.child ?? TrudeCardBack(width: spec.width);
+
   /// Elapsed ticker time when this flight was admitted; set by the layer.
   Duration? start;
   bool landed = false;
@@ -367,12 +372,13 @@ class _CardFlightLayerState extends State<CardFlightLayer>
     final a = spec.from.center - layerOrigin;
     final b = spec.to.center + spec.landingJitter - layerOrigin;
     return switch (spec.mode) {
-      CardFlightMode.bezier => _buildBezier(spec, raw, a, b),
-      CardFlightMode.ballistic => _buildBallistic(spec, raw, a, b),
+      CardFlightMode.bezier => _buildBezier(f, raw, a, b),
+      CardFlightMode.ballistic => _buildBallistic(f, raw, a, b),
     };
   }
 
-  Widget _buildBezier(CardFlightSpec spec, double raw, Offset a, Offset b) {
+  Widget _buildBezier(_ActiveFlight f, double raw, Offset a, Offset b) {
+    final spec = f.spec;
     final t = spec.curve.transform(raw);
 
     // Quadratic Bezier with the control point lifted above the midpoint.
@@ -395,17 +401,18 @@ class _CardFlightLayerState extends State<CardFlightLayer>
         angle: rotation,
         child: Transform.scale(
           scale: scale,
-          child: spec.child ?? TrudeCardBack(width: width),
+          child: f.card,
         ),
       ),
     );
   }
 
-  Widget _buildBallistic(CardFlightSpec spec, double raw, Offset a, Offset b) {
+  Widget _buildBallistic(_ActiveFlight f, double raw, Offset a, Offset b) {
+    final spec = f.spec;
     final pose = _ballisticPose(spec, raw, a, b);
     final width = spec.width;
     final height = width * kCardAspect;
-    final card = spec.child ?? TrudeCardBack(width: width);
+    final card = f.card;
 
     return Positioned(
       left: pose.position.dx - width / 2,

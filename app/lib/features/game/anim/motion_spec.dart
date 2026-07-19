@@ -287,6 +287,12 @@ abstract final class TableMotionSpec {
   /// Center drift of the light pool, in alignment units.
   static const feltFlickerDriftAmp = 0.03;
 
+  /// Quantization of the flicker phase: the phase is floored to this many
+  /// steps per period, so the felt gradients repaint at period/steps
+  /// (7 s / 70 = every 100 ms) instead of every frame — `shouldRepaint`
+  /// rejects frames whose quantized phase is unchanged.
+  static const feltFlickerSteps = 70;
+
   // -- Reveal restage -----------------------------------------------------------
 
   /// Peak opacity of the deepened reveal dim (was a lighter vignette).
@@ -307,6 +313,12 @@ abstract final class TableMotionSpec {
 
   /// Brass glint particles twinkling around the framed square.
   static const quadGlintCount = 14;
+
+  /// Point of the shrink phase where the framed square starts fading out;
+  /// it reaches full transparency exactly at the end of the shrink, so the
+  /// set piece's final frame is invisible (no stray mini-square parked at
+  /// the rail while waiting for the onDone unmount).
+  static const quadFadeFrom = 0.65;
 
   // -- Game-over theater bow ----------------------------------------------------
 

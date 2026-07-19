@@ -61,6 +61,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get roomNotFound => 'Комната не найдена';
 
   @override
+  String get roomFull => 'Комната заполнена';
+
+  @override
+  String get joinFailedGeneric =>
+      'Не удалось подключиться. Проверь код и попробуй ещё раз.';
+
+  @override
+  String get joinCodeDialogHint =>
+      'Код у создателя комнаты — в лобби и за столом';
+
+  @override
   String get createRoomTitle => 'Новая комната';
 
   @override
@@ -92,6 +103,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get createFailedGeneric =>
+      'Не удалось создать комнату. Попробуй ещё раз.';
+
+  @override
   String get openRoomsTitle => 'Открытые комнаты';
 
   @override
@@ -100,11 +115,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String playersOf(int players, int max) {
     return '$players/$max игроков';
-  }
-
-  @override
-  String joinFailed(String reason) {
-    return 'Не удалось подключиться: $reason';
   }
 
   @override
@@ -135,6 +145,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String roomCodeLabel(String code) {
     return 'Код комнаты: $code';
   }
+
+  @override
+  String get shareCodeHint => 'Поделись кодом — по нему заходят друзья';
 
   @override
   String secondsOption(int s) {
@@ -239,6 +252,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get waitingForOpponent => 'Ждём…';
+
+  @override
+  String get leaveGameTitle => 'Покинуть игру?';
+
+  @override
+  String get leaveGameBody => 'Твоё место займёт бот.';
+
+  @override
+  String get leaveGameConfirm => 'Покинуть';
 
   @override
   String seatName(int number) {
@@ -552,7 +574,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'human_polygraph': 'Поймай 25 лжецов',
       'gullible': 'Открой правдивую карту 15 раз',
       'poker_face': 'Соври 50 раз — и пусть никто не заметит',
-      'smuggler': 'Подсунь джокера чужому игроку 10 раз',
+      'smuggler': 'Подсунь джокера 10 раз',
       'hot_potato': 'Передай джокера дважды за одну партию',
       'jokers_best_friend': 'Проиграй 5 партий — джокер тебя просто любит',
       'demolition_crew': 'Сбрось четыре одинаковых 10 раз',

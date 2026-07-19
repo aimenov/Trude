@@ -31,6 +31,11 @@ void main() {
           Text(Strings.forcedCheckTurn('Вася')),
           Text(Strings.respondChoiceHint),
           Text(Strings.lastClaimPlaque('Вася', Strings.claimBody(3, '7'))),
+          Text(Strings.roomFull),
+          Text(Strings.joinFailedGeneric),
+          Text(Strings.leaveGameTitle),
+          Text(Strings.shareCodeHint),
+          Text(Strings.achievementDescription('smuggler', '~fallback~')),
         ]));
       }),
     ));
@@ -54,6 +59,18 @@ void main() {
 
     // Claim plaque keeps the paucal agreement through claimBody.
     expect(find.text('Вася: ТРИ СЕМЁРКИ'), findsOneWidget);
+
+    // Friendly join errors and the room-code hints.
+    expect(find.text('Комната заполнена'), findsOneWidget);
+    expect(find.text('Не удалось подключиться. Проверь код и попробуй ещё раз.'),
+        findsOneWidget);
+    expect(find.text('Покинуть игру?'), findsOneWidget);
+    expect(find.text('Поделись кодом — по нему заходят друзья'),
+        findsOneWidget);
+
+    // «Контрабандист» dropped the «чужому игроку» clause.
+    expect(Strings.achievementDescription('smuggler', '~fallback~'),
+        'Подсунь джокера 10 раз');
   });
 
   testWidgets('EN locale keeps the original callouts', (tester) async {

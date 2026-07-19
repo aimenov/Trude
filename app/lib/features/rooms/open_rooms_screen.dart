@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/net/connection_providers.dart';
+import '../../core/net/error_messages.dart';
 import '../../core/strings.dart';
 import '../../core/theme/trude_theme.dart';
 import '../game/widgets/card_widgets.dart';
@@ -76,7 +77,9 @@ class _OpenRoomsScreenState extends ConsumerState<OpenRoomsScreen> {
       }
       setState(() => _lobby = lobby);
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) {
+        setState(() => _error = friendlyRoomError(e, creating: false));
+      }
     }
   }
 
@@ -111,8 +114,8 @@ class _OpenRoomsScreenState extends ConsumerState<OpenRoomsScreen> {
       if (mounted) context.go('/lobby');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(Strings.joinFailed('$e'))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(friendlyRoomError(e, creating: false))));
         setState(() => _busy = false);
       }
     }

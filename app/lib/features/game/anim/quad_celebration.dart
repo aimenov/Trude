@@ -94,7 +94,10 @@ class _QuadCelebrationState extends State<QuadCelebration>
         final squareCenter = shrink > 0
             ? Offset.lerp(center, rail, shrink)!
             : Offset.lerp(from, center, assemble)!;
-        final squareScale = shrink > 0 ? 1 - 0.85 * shrink : assemble;
+        final squareScale = shrink > 0 ? (1 - shrink) : assemble;
+        // Fade over the tail of the shrink so the last frame is fully
+        // invisible — nothing left parked at the rail before onDone unmounts.
+        final fade = _phase(shrink, TableMotionSpec.quadFadeFrom, 1.0);
 
         return IgnorePointer(
           child: Stack(
@@ -119,9 +122,12 @@ class _QuadCelebrationState extends State<QuadCelebration>
                 top: squareCenter.dy,
                 child: FractionalTranslation(
                   translation: const Offset(-0.5, -0.5),
-                  child: Transform.scale(
-                    scale: max(0.05, squareScale),
-                    child: _framedSquare(cardWidth, gap, shine),
+                  child: Opacity(
+                    opacity: 1 - fade,
+                    child: Transform.scale(
+                      scale: max(0.05, squareScale),
+                      child: _framedSquare(cardWidth, gap, shine),
+                    ),
                   ),
                 ),
               ),

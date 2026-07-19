@@ -72,6 +72,11 @@ class TrudeCardBack extends StatelessWidget {
 
 /// Sweeping gloss highlight across a card back, randomized phase per card so
 /// the pile glitters rather than blinks.
+///
+/// Perf: an overlay streak instead of a ShaderMask — no per-frame saveLayer
+/// and no gradient/shader rebuilds. The gradient child is const-built once;
+/// per frame only the FractionalTranslation offset changes, clipped to the
+/// card's rounded corners.
 class _Shimmer extends StatefulWidget {
   const _Shimmer({required this.width, required this.child});
 
@@ -90,6 +95,22 @@ class _ShimmerState extends State<_Shimmer>
     value: motionJitter.range(0, 1),
   )..repeat();
 
+  /// The diagonal gloss streak (white at alpha 0.18), built exactly once.
+  static const _streak = DecoratedBox(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.transparent,
+          Color(0x2EFFFFFF), // white, alpha 0.18
+          Colors.transparent,
+        ],
+        stops: [0.35, 0.5, 0.65],
+      ),
+    ),
+  );
+
   @override
   void dispose() {
     _controller.dispose();
@@ -98,40 +119,29 @@ class _ShimmerState extends State<_Shimmer>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      child: widget.child,
-      builder: (context, child) {
-        final t = _controller.value;
-        return ShaderMask(
-          blendMode: BlendMode.srcATop,
-          shaderCallback: (bounds) => LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.transparent,
-              Colors.white.withValues(alpha: 0.18),
-              Colors.transparent,
-            ],
-            stops: const [0.35, 0.5, 0.65],
-            transform: _SlideGradient(t),
-          ).createShader(bounds),
-          child: child,
-        );
-      },
+    final radius =
+        BorderRadius.circular(widget.width * TrudeDims.cardRadiusFactor);
+    return Stack(
+      children: [
+        widget.child,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: ClipRRect(
+              borderRadius: radius,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) => FractionalTranslation(
+                  // Sweep from off-left to off-right over one period.
+                  translation: Offset(_controller.value * 3 - 1.5, 0),
+                  child: _streak,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
-}
-
-class _SlideGradient extends GradientTransform {
-  const _SlideGradient(this.t);
-
-  final double t;
-
-  @override
-  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) =>
-      // Sweep from off-left to off-right over one period.
-      Matrix4.translationValues(bounds.width * (t * 3 - 1.5), 0, 0);
 }
 
 class TrudeCardFace extends StatelessWidget {

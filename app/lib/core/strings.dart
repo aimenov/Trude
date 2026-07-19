@@ -58,6 +58,9 @@ abstract final class Strings {
   static String get join => _l.join;
   static String get cancel => _l.cancel;
   static String get roomNotFound => _l.roomNotFound;
+  static String get roomFull => _l.roomFull;
+  static String get joinFailedGeneric => _l.joinFailedGeneric;
+  static String get joinCodeDialogHint => _l.joinCodeDialogHint;
 
   // Create-room dialog
   static String get createRoomTitle => _l.createRoomTitle;
@@ -67,13 +70,13 @@ abstract final class Strings {
   static String get deckLabel => _l.deckLabel;
   static String get create => _l.create;
   static String deckOption(int size) => _l.deckOption(size);
+  static String get createFailedGeneric => _l.createFailedGeneric;
 
   // Open rooms screen
   static String get openRoomsTitle => _l.openRoomsTitle;
   static String get noRoomsYet => _l.noRoomsYet;
   static String playersOf(int players, int max) => _l.playersOf(players, max);
   static String deckBadge(int size) => '$size';
-  static String joinFailed(String reason) => _l.joinFailed(reason);
 
   // Lobby screen
   static String get lobbyTitle => _l.lobbyTitle;
@@ -85,6 +88,7 @@ abstract final class Strings {
   static String get adminBadge => _l.adminBadge;
   static String get youBadge => _l.youBadge;
   static String roomCodeLabel(String code) => _l.roomCodeLabel(code);
+  static String get shareCodeHint => _l.shareCodeHint;
   static String secondsOption(int s) => _l.secondsOption(s);
   static String swapAsk(String nickname) => _l.swapAsk(nickname);
   static String get requestSwap => _l.requestSwap;
@@ -121,6 +125,9 @@ abstract final class Strings {
   static String get offlineBadge => _l.offlineBadge;
   static String get autoPilotBadge => _l.autoPilotBadge;
   static String get waitingForOpponent => _l.waitingForOpponent;
+  static String get leaveGameTitle => _l.leaveGameTitle;
+  static String get leaveGameBody => _l.leaveGameBody;
+  static String get leaveGameConfirm => _l.leaveGameConfirm;
 
   // Seats
   static String seatName(int seat) => _l.seatName(seat + 1);
