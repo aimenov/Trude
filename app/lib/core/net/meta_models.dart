@@ -5,6 +5,51 @@ library;
 int _int(dynamic v, [int fallback = 0]) =>
     v == null ? fallback : (v as num).toInt();
 
+bool _bool(dynamic v, [bool fallback = false]) => v is bool ? v : fallback;
+
+/// Default cosmetic keys — price 0, implicitly owned by everyone.
+const kDefaultCardBack = 'cb_classic';
+const kDefaultFelt = 'felt_classic';
+
+/// The `selected` block of `GET /me` / `GET /me/cosmetics`: which card back
+/// and felt the user has equipped. Missing/unknown fields fall back to the
+/// classic defaults so pre-economy servers never break the client.
+class SelectedCosmetics {
+  const SelectedCosmetics({
+    this.cardBack = kDefaultCardBack,
+    this.felt = kDefaultFelt,
+  });
+
+  factory SelectedCosmetics.fromJson(Map<String, dynamic>? json) =>
+      json == null
+          ? const SelectedCosmetics()
+          : SelectedCosmetics(
+              cardBack: json['cardBack'] as String? ?? kDefaultCardBack,
+              felt: json['felt'] as String? ?? kDefaultFelt,
+            );
+
+  final String cardBack;
+  final String felt;
+
+  SelectedCosmetics copyWith({String? cardBack, String? felt}) =>
+      SelectedCosmetics(
+        cardBack: cardBack ?? this.cardBack,
+        felt: felt ?? this.felt,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is SelectedCosmetics &&
+      other.cardBack == cardBack &&
+      other.felt == felt;
+
+  @override
+  int get hashCode => Object.hash(cardBack, felt);
+
+  @override
+  String toString() => 'SelectedCosmetics($cardBack, $felt)';
+}
+
 /// Lifetime stats block of `GET /me`. Unknown/missing fields default to 0 so
 /// server-side additions never break the client.
 class LifetimeStats {
@@ -62,12 +107,22 @@ class LifetimeStats {
 }
 
 /// `GET /me` / `PATCH /me` response (PATCH omits `stats`).
+///
+/// Economy fields (`coins`, `rating`, `premium`, `dailyStreak`,
+/// `dailyClaimedToday`, `selected`) default null-safely so a pre-economy
+/// server response still parses.
 class MeProfile {
   const MeProfile({
     required this.userId,
     required this.nickname,
     required this.avatar,
     this.stats,
+    this.coins = 0,
+    this.rating = 1000,
+    this.premium = false,
+    this.dailyStreak = 0,
+    this.dailyClaimedToday = false,
+    this.selected = const SelectedCosmetics(),
   });
 
   factory MeProfile.fromJson(Map<String, dynamic> json) => MeProfile(
@@ -78,12 +133,30 @@ class MeProfile {
             ? null
             : LifetimeStats.fromJson(
                 (json['stats'] as Map).cast<String, dynamic>()),
+        coins: _int(json['coins']),
+        rating: _int(json['rating'], 1000),
+        premium: _bool(json['premium']),
+        dailyStreak: _int(json['dailyStreak']),
+        dailyClaimedToday: _bool(json['dailyClaimedToday']),
+        selected: SelectedCosmetics.fromJson(json['selected'] == null
+            ? null
+            : (json['selected'] as Map).cast<String, dynamic>()),
       );
 
   final String userId;
   final String nickname;
   final String avatar;
   final LifetimeStats? stats;
+
+  /// Wallet balance. 0 when the server predates the economy.
+  final int coins;
+
+  /// ELO rating; the server's initial rating (1000) when absent.
+  final int rating;
+  final bool premium;
+  final int dailyStreak;
+  final bool dailyClaimedToday;
+  final SelectedCosmetics selected;
 }
 
 /// One `unlocked` entry of `GET /me/achievements`.

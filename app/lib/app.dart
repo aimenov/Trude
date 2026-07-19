@@ -7,6 +7,7 @@ import 'core/theme/trude_theme.dart';
 import 'core/storage/settings_providers.dart';
 import 'core/strings.dart';
 import 'features/achievements/achievement_toast.dart';
+import 'features/economy/rewards_providers.dart';
 import 'features/game/anim/rendered_state.dart';
 import 'l10n/app_localizations.dart';
 
@@ -22,6 +23,11 @@ class TrudeApp extends ConsumerWidget {
     // guarantees the animation queue is listening before that navigation, so
     // nothing is lost and the deal still animates on the table.
     ref.listen(renderedGameStateProvider, (previous, next) {});
+    // Same non-replaying-stream reasoning: the per-game rewards and
+    // achievement accumulators must be subscribed to the room BEFORE the
+    // gameOver/rewards messages arrive, not when the results screen mounts.
+    ref.listen(rewardsThisGameProvider, (previous, next) {});
+    ref.listen(unlockedThisGameProvider, (previous, next) {});
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       theme: buildTrudeTheme(),

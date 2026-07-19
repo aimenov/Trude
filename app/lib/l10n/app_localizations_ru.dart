@@ -586,4 +586,258 @@ class AppLocalizationsRu extends AppLocalizations {
     });
     return '$_temp0';
   }
+
+  @override
+  String tierName(String tier) {
+    String _temp0 = intl.Intl.selectLogic(tier, {
+      'novice': 'Новичок',
+      'cardplayer': 'Картёжник',
+      'rogue': 'Плут',
+      'sharp': 'Шулер',
+      'hustler': 'Катала',
+      'legend': 'Легенда салона',
+      'other': '$tier',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get rankUpToast => 'Новое звание!';
+
+  @override
+  String get leaderboardTitle => 'Табель почёта';
+
+  @override
+  String get leaderboardWeekly => 'Неделя';
+
+  @override
+  String get leaderboardAlltime => 'За всё время';
+
+  @override
+  String get leaderboardEmpty => 'На доске пока пусто — сыграй открытую партию';
+
+  @override
+  String get leaderboardLoadFailed =>
+      'Не удалось загрузить — потяни, чтобы обновить';
+
+  @override
+  String leaderboardMyRank(int rank) {
+    return 'Твоё место: $rank';
+  }
+
+  @override
+  String gamesRatedLabel(num games) {
+    String _temp0 = intl.Intl.pluralLogic(
+      games,
+      locale: localeName,
+      other: '$games рейтинговой партии',
+      many: '$games рейтинговых партий',
+      few: '$games рейтинговые партии',
+      one: '$games рейтинговая партия',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shopTitle => 'Лавка';
+
+  @override
+  String get shopCardBacksSection => 'Рубашки карт';
+
+  @override
+  String get shopFeltsSection => 'Сукно стола';
+
+  @override
+  String get shopCoinsSection => 'Монеты';
+
+  @override
+  String get shopPremiumSection => 'Покровительство';
+
+  @override
+  String shopWatchAd(int coins) {
+    return '+$coins за слово от нашего покровителя';
+  }
+
+  @override
+  String get shopOwned => 'В коллекции';
+
+  @override
+  String get shopEquipped => 'Выбрано';
+
+  @override
+  String get shopPremiumLock => 'Только для покровителей';
+
+  @override
+  String get shopBuyConfirmTitle => 'Покупка';
+
+  @override
+  String shopBuyConfirmBody(String item, num coins) {
+    String _temp0 = intl.Intl.pluralLogic(
+      coins,
+      locale: localeName,
+      other: '$coins монеты',
+      many: '$coins монет',
+      few: '$coins монеты',
+      one: '$coins монету',
+    );
+    return 'Купить «$item» за $_temp0?';
+  }
+
+  @override
+  String get shopInsufficientFunds => 'В кошеле не хватает монет';
+
+  @override
+  String get shopBillingUnavailable => 'Эта полка открыта в мобильном салоне';
+
+  @override
+  String get shopPurchaseWarningTitle => 'Прежде чем купить';
+
+  @override
+  String get shopPurchaseWarningBody =>
+      'Покупки привязаны к гостевому аккаунту на этом устройстве. Если удалить приложение или сменить устройство, они могут пропасть — настоящий вход появится позже.';
+
+  @override
+  String get restorePurchases => 'Восстановить покупки';
+
+  @override
+  String get restoreDone => 'Покупки восстановлены';
+
+  @override
+  String get premiumTitle => 'Покровитель салона';
+
+  @override
+  String get premiumPitch =>
+      'Золочёная рубашка, знак покровителя — и никакой рекламы. Никогда.';
+
+  @override
+  String get premiumOwned => 'Ты — покровитель салона';
+
+  @override
+  String coinPackLabel(num coins) {
+    String _temp0 = intl.Intl.pluralLogic(
+      coins,
+      locale: localeName,
+      other: '$coins монеты',
+      many: '$coins монет',
+      few: '$coins монеты',
+      one: '$coins монета',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get buy => 'Купить';
+
+  @override
+  String cosmeticName(String key) {
+    String _temp0 = intl.Intl.selectLogic(key, {
+      'cb_classic': 'Классика',
+      'cb_crimson': 'Багрянец',
+      'cb_noir': 'Нуар',
+      'cb_royal': 'Королевская',
+      'cb_imperial': 'Императорская',
+      'cb_gilded': 'Золочёная',
+      'felt_classic': 'Классическое сукно',
+      'felt_burgundy': 'Бордо',
+      'felt_navy': 'Синее сукно',
+      'felt_midnight': 'Полночь',
+      'other': '$key',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyBonusTitle => 'Заведение ценит завсегдатаев';
+
+  @override
+  String get dailyBonusSubtitle => 'Возвращайся завтра — серия растёт';
+
+  @override
+  String dailyBonusDay(int day) {
+    return 'День $day';
+  }
+
+  @override
+  String dailyBonusClaim(int coins) {
+    return 'Забрать $coins';
+  }
+
+  @override
+  String get questsTitle => 'Поручения на вечер';
+
+  @override
+  String questRewardChip(int coins) {
+    return '+$coins';
+  }
+
+  @override
+  String questTitle(String key) {
+    String _temp0 = intl.Intl.selectLogic(key, {
+      'q_play_3': 'Завсегдатай',
+      'q_win_1': 'Сорви куш',
+      'q_catch_3': 'Намётанный глаз',
+      'q_survive_5': 'Гладко стелет',
+      'q_truth_15': 'Честный вечер',
+      'q_quad_1': 'Каре',
+      'q_pass_joker': 'С рук долой',
+      'q_pickup_20': 'Под раздачу',
+      'q_smuggle_1': 'Ловкость рук',
+      'other': '$key',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String questDescription(String key) {
+    String _temp0 = intl.Intl.selectLogic(key, {
+      'q_play_3': 'Сыграй 3 партии',
+      'q_win_1': 'Выиграй партию',
+      'q_catch_3': 'Поймай трёх лжецов',
+      'q_survive_5': 'Соври 5 раз и не попадись',
+      'q_truth_15': 'Сделай 15 честных бросков',
+      'q_quad_1': 'Сбрось четыре одинаковых',
+      'q_pass_joker': 'Передай джокера дальше',
+      'q_pickup_20': 'Подними 20 карт',
+      'q_smuggle_1': 'Подсунь джокера в чужой бросок',
+      'other': '$key',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get rewardsPanelTitle => 'Выручка вечера';
+
+  @override
+  String get doubleWinnings => 'Удвоить выигрыш';
+
+  @override
+  String get doubledLabel => 'Удвоено';
+
+  @override
+  String get unratedGame => 'Дружеская партия — без рейтинга';
+
+  @override
+  String get deleteAccount => 'Удалить аккаунт';
+
+  @override
+  String get deleteAccountTitle => 'Удалить аккаунт?';
+
+  @override
+  String get deleteAccountBody =>
+      'Монеты, рейтинг, покупки и прогресс исчезнут навсегда.';
+
+  @override
+  String get deleteAccountSecondTitle => 'Пути назад нет';
+
+  @override
+  String get deleteAccountSecondBody =>
+      'Отменить это будет нельзя. Удалить аккаунт?';
+
+  @override
+  String get deleteAccountConfirm => 'Удалить';
+
+  @override
+  String deleteAccountFailed(String reason) {
+    return 'Не удалось удалить аккаунт: $reason';
+  }
 }

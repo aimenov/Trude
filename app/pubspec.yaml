@@ -45,6 +45,12 @@ dependencies:
   flutter_riverpod: ^2.6.1
   go_router: ^16.0.0
   web: ^1.1.0
+  # Mobile-only plugins (no web/desktop impls). Safe to list here: only the
+  # conditionally-imported backends (core/ads/ads_backend_google.dart,
+  # core/billing/billing_backend_iap.dart) may import them — never anything
+  # else, or the web build breaks.
+  google_mobile_ads: ^9.0.0
+  in_app_purchase: ^3.3.0
 
 dev_dependencies:
   flutter_test:

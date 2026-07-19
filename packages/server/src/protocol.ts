@@ -97,6 +97,24 @@ export interface StateFull {
   loserSeat: number | null;
 }
 
+/**
+ * Post-game economy summary, sent per seat right after `gameOver` — ONLY to
+ * clients that joined with `supportsRewards: true`. Mirrors store GameAwards.
+ */
+export interface RewardsMessage {
+  /** Persisted GameResult id — pass as `gameId` to GET /ads/token?kind=double. */
+  gameId: string;
+  achievements: { key: string; title: string; description: string }[];
+  /** GAME_AWARD coins granted for this game (post daily-cap clamp). */
+  coins: number;
+  ratingDelta: number;
+  newRating: number;
+  rated: boolean;
+  quests: { key: string; progress: number; target: number; completed: boolean; coins: number }[];
+  /** Wallet balance after all grants. */
+  balance: number;
+}
+
 export type ServerErrorCode =
   | 'NOT_ADMIN' | 'BAD_CONFIG' | 'NOT_ENOUGH_PLAYERS' | 'TOO_MANY_PLAYERS' | 'BAD_TARGET'
   | 'NOT_IN_ROOM' | 'STALE_ACTION' | 'BAD_EMOJI' | 'RATE_LIMITED' | 'NO_PENDING_SWAP'

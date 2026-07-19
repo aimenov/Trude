@@ -18,6 +18,7 @@ import '../../../core/motion/animation_speed.dart';
 import '../../../core/net/connection_providers.dart';
 import '../../../core/strings.dart';
 import '../widgets/card_widgets.dart';
+import '../widgets/cosmetic_styles.dart';
 import 'animation_queue.dart';
 import 'card_flight.dart';
 import 'claim_callout.dart';
@@ -399,9 +400,17 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
 /// recorded once per size into a [ui.Picture] and replayed each frame, so the
 /// flicker only repaints two gradients.
 class TableFeltBackground extends StatefulWidget {
-  const TableFeltBackground({super.key, required this.speed});
+  const TableFeltBackground({
+    super.key,
+    required this.speed,
+    this.style = FeltStyle.classic,
+  });
 
   final AnimationSpeed speed;
+
+  /// Cosmetic felt palette (classic default is bit-identical to the original
+  /// green felt).
+  final FeltStyle style;
 
   @override
   State<TableFeltBackground> createState() => _TableFeltBackgroundState();
@@ -455,6 +464,7 @@ class _TableFeltBackgroundState extends State<TableFeltBackground>
                     .floor() /
                 TableMotionSpec.feltFlickerSteps,
             layers: _layers,
+            style: widget.style,
           ),
           size: Size.infinite,
         ),
@@ -468,16 +478,18 @@ class _TableFeltBackgroundState extends State<TableFeltBackground>
 class _FeltStaticLayers {
   ui.Picture? _picture;
   Size? _size;
+  String? _styleId;
 
-  ui.Picture layersFor(Size size) {
+  ui.Picture layersFor(Size size, String styleId) {
     final cached = _picture;
-    if (cached != null && _size == size) return cached;
+    if (cached != null && _size == size && _styleId == styleId) return cached;
     _picture?.dispose();
     final recorder = ui.PictureRecorder();
     _record(Canvas(recorder), size);
     final picture = recorder.endRecording();
     _picture = picture;
     _size = size;
+    _styleId = styleId;
     return picture;
   }
 
@@ -622,11 +634,12 @@ class _FeltStaticLayers {
 }
 
 class _FeltPainter extends CustomPainter {
-  _FeltPainter({required this.phase, required this.layers});
+  _FeltPainter({required this.phase, required this.layers, required this.style});
 
   /// 0..1 through one flicker period.
   final double phase;
   final _FeltStaticLayers layers;
+  final FeltStyle style;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -643,16 +656,12 @@ class _FeltPainter extends CustomPainter {
                 (sin(a * 3 + 0.5) * 0.7 + sin(a * 7 + 2.1) * 0.3));
 
     // The felt light pool — TrudeGradients.feltLight with an animated
-    // center/radius (same colors and stops).
+    // center/radius (classic style carries the same colors and stops).
     final felt = Paint()
       ..shader = RadialGradient(
         center: Alignment(cx, cy),
         radius: radius,
-        colors: const [
-          TrudeColors.feltLit,
-          TrudeColors.felt,
-          TrudeColors.feltDeep,
-        ],
+        colors: [style.lit, style.base, style.deep],
         stops: const [0.0, 0.55, 1.0],
       ).createShader(rect);
     canvas.drawRect(rect, felt);
@@ -663,16 +672,16 @@ class _FeltPainter extends CustomPainter {
         center: Alignment(cx, cy),
         radius: radius * 0.5,
         colors: [
-          TrudeColors.brassBright
-              .withValues(alpha: 0.045 + 0.015 * sin(a * 5 + 0.9)),
-          TrudeColors.brassBright.withValues(alpha: 0.0),
+          style.warmth.withValues(alpha: 0.045 + 0.015 * sin(a * 5 + 0.9)),
+          style.warmth.withValues(alpha: 0.0),
         ],
       ).createShader(rect);
     canvas.drawRect(rect, warmth);
 
-    canvas.drawPicture(layers.layersFor(size));
+    canvas.drawPicture(layers.layersFor(size, style.id));
   }
 
   @override
-  bool shouldRepaint(_FeltPainter old) => old.phase != phase;
+  bool shouldRepaint(_FeltPainter old) =>
+      old.phase != phase || old.style.id != style.id;
 }

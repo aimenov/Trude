@@ -40,12 +40,12 @@ describe.skipIf(!url)('PrismaStore against real Postgres', () => {
     };
 
     const unlocked = await store.recordGameResult(result);
-    const aliceUnlocks = (unlocked.get(alice.id) ?? []).map((a) => a.key).sort();
+    const aliceUnlocks = (unlocked.get(alice.id)?.achievements ?? []).map((a) => a.key).sort();
     expect(aliceUnlocks).toEqual(['hot_potato', 'it_wasnt_me']);
 
     // Same game again: stats accumulate, no duplicate unlocks.
     const again = await store.recordGameResult(result);
-    expect(again.get(alice.id) ?? []).toEqual([]);
+    expect(again.get(alice.id)?.achievements ?? []).toEqual([]);
 
     const stats = await store.getStats(alice.id);
     expect(stats.gamesPlayed).toBe(2);
@@ -59,5 +59,65 @@ describe.skipIf(!url)('PrismaStore against real Postgres', () => {
 
     const achievements = await store.getAchievements(alice.id);
     expect(achievements.map((a) => a.key).sort()).toEqual(['hot_potato', 'it_wasnt_me']);
+  });
+
+  it('meta economy round-trip: awards, wallet, daily, shop, leaderboard, delete', async () => {
+    process.env['DATABASE_URL'] = url;
+    const { PrismaStore } = await import('../src/store/prismaStore.js');
+    const store = new PrismaStore();
+
+    const suffix = Date.now().toString(36);
+    const users = await Promise.all(['P', 'Q', 'R'].map((n, i) =>
+      store.upsertGuest(`meta-${n}-${suffix}-0123456789`, `Meta${n}${i}`, 'a1')));
+
+    // Rated public 3p game: coins + rating for everyone.
+    const awards = await store.recordGameResult({
+      roomId: `rmeta-${suffix}`, deckSize: 37, status: 'FINISHED',
+      loserUserId: users[2]!.id, isPrivate: false, actionCount: 40,
+      participants: users.map((u, i) => ({ userId: u.id, placement: i + 1, stats: gameStats({ truthfulThrows: 2 }) })),
+    });
+    const winner = awards.get(users[0]!.id)!;
+    expect(winner.coins).toBe(25);
+    expect(winner.rated).toBe(true);
+    expect(winner.ratingDelta).toBeGreaterThan(0);
+    expect(winner.balance).toBeGreaterThanOrEqual(25);
+    expect(winner.quests).toHaveLength(3);
+
+    // Daily claim is idempotent.
+    const claim1 = await store.claimDaily(users[0]!.id);
+    expect(claim1.claimed).toBe(true);
+    expect(claim1.coins).toBe(10);
+    const claim2 = await store.claimDaily(users[0]!.id);
+    expect(claim2.claimed).toBe(false);
+    expect(claim2.balance).toBe(claim1.balance);
+
+    // Leaderboard has all three, ranked.
+    const board = await store.getLeaderboard('alltime', 50, users[0]!.id);
+    const ourRows = board.entries.filter((e) => users.some((u) => u.id === e.userId));
+    expect(ourRows.length).toBe(3);
+    expect(board.me?.value).toBe(winner.newRating);
+
+    // Buy + equip a cosmetic (winner has 25 + daily 10 = 35 < 300, so grant via IAP first).
+    const iap = await store.applyIapPurchase(users[0]!.id, {
+      platform: 'google', productId: 'coins_small', orderId: `order-${suffix}`,
+    });
+    expect(iap.granted.coins).toBe(500);
+    const replay = await store.applyIapPurchase(users[0]!.id, {
+      platform: 'google', productId: 'coins_small', orderId: `order-${suffix}`,
+    });
+    expect(replay.alreadyProcessed).toBe(true);
+    expect(replay.balance).toBe(iap.balance);
+
+    const buy = await store.buyCosmetic(users[0]!.id, 'cb_crimson');
+    expect(buy.balance).toBe(iap.balance - 300);
+    const sel = await store.selectCosmetics(users[0]!.id, { cardBack: 'cb_crimson' });
+    expect(sel.cardBack).toBe('cb_crimson');
+
+    // Wallet always equals the ledger sum (invariant), then delete cascades.
+    const profile = await store.getMetaProfile(users[0]!.id);
+    expect(profile.coins).toBe(buy.balance);
+    await store.deleteUser(users[0]!.id);
+    expect(await store.getUser(users[0]!.id)).toBeNull();
+    expect((await store.getOwnedCosmetics(users[0]!.id)).owned).toEqual(['cb_classic', 'felt_classic']);
   });
 });

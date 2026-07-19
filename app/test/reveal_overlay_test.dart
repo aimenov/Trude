@@ -2,6 +2,7 @@
 // a synthetic checkResult event.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trude/core/audio/sfx_service.dart';
@@ -9,6 +10,16 @@ import 'package:trude/core/haptics/haptics_service.dart';
 import 'package:trude/core/net/protocol_models.dart';
 import 'package:trude/core/strings.dart';
 import 'package:trude/features/game/anim/reveal_overlay.dart';
+import 'package:trude/features/game/widgets/cosmetic_styles.dart';
+
+/// Card backs resolve their cosmetic style from a provider now, so the
+/// overlay needs a scope; pin classic to stay hermetic (no economy net layer).
+Widget _scoped(Widget app) => ProviderScope(
+      overrides: [
+        selectedCardBackStyleProvider.overrideWithValue(CardBackStyle.classic),
+      ],
+      child: app,
+    );
 
 CheckResultEvent _syntheticCheckResult({required bool matched}) =>
     WireEvent.fromJson({
@@ -29,7 +40,7 @@ void main() {
     var verdictFired = false;
     var done = false;
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_scoped(MaterialApp(
       home: Scaffold(
         body: RevealOverlay(
           event: _syntheticCheckResult(matched: false),
@@ -41,7 +52,7 @@ void main() {
           onDone: () => done = true,
         ),
       ),
-    ));
+    )));
 
     // Dim + spread + lift + flip.
     await tester.pump(const Duration(milliseconds: 300));
@@ -66,7 +77,7 @@ void main() {
 
   testWidgets('reveal set piece shows TRUTH for a matched check',
       (tester) async {
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_scoped(MaterialApp(
       home: Scaffold(
         body: RevealOverlay(
           event: _syntheticCheckResult(matched: true),
@@ -76,7 +87,7 @@ void main() {
           haptics: HapticsService(),
         ),
       ),
-    ));
+    )));
 
     await tester.pump(const Duration(milliseconds: 2200));
     expect(find.text(Strings.verdictTruth), findsOneWidget);

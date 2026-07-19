@@ -1,14 +1,25 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/motion/animation_speed.dart';
 import '../../core/net/connection_providers.dart';
+import '../../core/net/economy_providers.dart';
 import '../../core/net/error_messages.dart';
-import '../../core/net/meta_providers.dart';
 import '../../core/storage/identity_providers.dart';
 import '../../core/strings.dart';
 import '../../core/theme/trude_theme.dart';
+import '../leaderboard/rating_tiers.dart';
 import 'parlor_widgets.dart';
+
+/// Daily-bonus curve by streak day 1..7+ (display only — the server is the
+/// truth); day 7 is the cap.
+const kDailyBonusByDay = [10, 15, 20, 30, 40, 50, 60];
+
+/// Whether the daily-bonus sheet already auto-opened this app session.
+final dailySheetShownProvider = StateProvider<bool>((_) => false);
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -75,9 +86,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
+  /// Auto-opens the daily-bonus sheet: once per app session, only while the
+  /// screen is idle (never over a create/join in flight).
+  void _maybeShowDailySheet() {
+    if (_busy || ref.read(dailySheetShownProvider)) return;
+    if (!ref.read(dailyBonusProvider).claimable) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _busy) return;
+      // Home can rebuild while another route (lobby/table) is stacked on
+      // top — the sheet would open OVER that route and swallow its taps.
+      // Only auto-open while home itself is the current route.
+      if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+      if (ref.read(dailySheetShownProvider)) return;
+      if (!ref.read(dailyBonusProvider).claimable) return;
+      ref.read(dailySheetShownProvider.notifier).state = true;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const DailyBonusSheet(),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final nickname = ref.watch(identityProvider)?.nickname ?? '';
+    // Watched (not read) so a late claimable flip re-triggers the check.
+    ref.watch(dailyBonusProvider);
+    _maybeShowDailySheet();
     return ParlorBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -114,6 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       textStyle: const TextStyle(fontSize: 13),
                     ),
                   ),
+                  const WalletRow(),
                   const _StatsStrip(),
                   const SizedBox(height: 22),
                   // The primary CTA: a grand brass slab.
@@ -130,7 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   const EtchedDivider(),
-                  // The parlor doors: four plaque cards.
+                  // The parlor doors: six plaque cards.
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
@@ -150,6 +187,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         onTap: _busy ? null : _joinByCode,
                       ),
                       _DoorPlaque(
+                        icon: Icons.storefront_outlined,
+                        label: Strings.shopTitle,
+                        onTap: () => context.go('/shop'),
+                      ),
+                      _DoorPlaque(
+                        icon: Icons.leaderboard_outlined,
+                        label: Strings.leaderboardTitle,
+                        onTap: () => context.go('/leaderboard'),
+                      ),
+                      _DoorPlaque(
                         icon: Icons.emoji_events_outlined,
                         label: Strings.achievementsTitle,
                         onTap: () => context.go('/achievements'),
@@ -161,6 +208,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
+                  const _QuestsPanel(),
                 ],
               ),
             ),
@@ -224,6 +272,350 @@ class _DoorPlaque extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Coin + rating chips under the identity line. Hidden until the profile
+/// loads. The coin chip opens the shop, the rating chip (with its tier name)
+/// opens the leaderboard; both numbers count up on change.
+class WalletRow extends ConsumerWidget {
+  const WalletRow({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coins = ref.watch(walletProvider);
+    final rating = ref.watch(ratingProvider);
+    if (coins == null && rating == null) return const SizedBox(height: 2);
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (coins != null)
+            _WalletChip(
+              icon: Icons.paid_outlined,
+              value: coins,
+              onTap: () => context.go('/shop'),
+            ),
+          if (coins != null && rating != null) const SizedBox(width: 10),
+          if (rating != null)
+            _WalletChip(
+              icon: Icons.military_tech_outlined,
+              value: rating,
+              caption: Strings.tierName(tierFor(rating).key),
+              onTap: () => context.go('/leaderboard'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WalletChip extends ConsumerWidget {
+  const _WalletChip({
+    required this.icon,
+    required this.value,
+    this.caption,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final int value;
+  final String? caption;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final speed = ref.watch(animationSpeedProvider);
+    return PressableScale(
+      onTap: onTap,
+      child: EtchedPlaque(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: TrudeColors.brassBright),
+            const SizedBox(width: 6),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: value.toDouble()),
+                  duration: speed.scale(const Duration(milliseconds: 700)),
+                  builder: (context, v, _) => Text(
+                    '${v.round()}',
+                    style: TrudeType.display.copyWith(
+                        fontSize: 16,
+                        height: 1.1,
+                        color: TrudeColors.brassBright),
+                  ),
+                ),
+                if (caption != null)
+                  Text(
+                    caption!,
+                    style: TrudeType.etched.copyWith(
+                        fontSize: 7.5, letterSpacing: 1.2),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// «Поручения на вечер» — the three daily quests as brass progress rows.
+/// Collapses entirely while loading or on a provider error.
+class _QuestsPanel extends ConsumerWidget {
+  const _QuestsPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quests = ref.watch(questsProvider);
+    return switch (quests) {
+      AsyncData(:final value) when value.quests.isNotEmpty => ParlorPanel(
+          margin: const EdgeInsets.only(top: 14),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                Strings.questsTitle.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: TrudeType.etched.copyWith(
+                    fontSize: 10.5, letterSpacing: 2.4),
+              ),
+              const SizedBox(height: 10),
+              for (final q in value.quests) _QuestRow(quest: q),
+            ],
+          ),
+        ),
+      _ => const SizedBox.shrink(),
+    };
+  }
+}
+
+class _QuestRow extends StatelessWidget {
+  const _QuestRow({required this.quest});
+
+  final dynamic quest;
+
+  @override
+  Widget build(BuildContext context) {
+    final int progress = quest.progress as int;
+    final int target = quest.target as int;
+    final bool completed = quest.completed as bool;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  Strings.questTitle(quest.key as String),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TrudeType.cardIndex.copyWith(
+                    fontSize: 13,
+                    color: completed
+                        ? TrudeColors.brassBright
+                        : TrudeColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  Strings.questDescription(quest.key as String),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 10.5, color: TrudeColors.textMuted),
+                ),
+                const SizedBox(height: 4),
+                BrassProgressBar(
+                  progress: target == 0 ? 0 : progress / target,
+                  label: '${min(progress, target)}/$target',
+                  height: 11,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          completed
+              ? const Icon(Icons.check_circle_outline,
+                  size: 20, color: TrudeColors.brassBright)
+              : Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: TrudeColors.surfaceSunken,
+                    borderRadius:
+                        BorderRadius.circular(TrudeDims.chipRadius),
+                    border: Border.all(color: TrudeColors.brassDark),
+                  ),
+                  child: Text(
+                    Strings.questRewardChip(quest.reward as int),
+                    style: TrudeType.cardIndex.copyWith(
+                        fontSize: 11.5, color: TrudeColors.brassBright),
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The daily-bonus bottom sheet: streak ribbon of the seven bonus slots and
+/// a brass claim button. Claiming is server-authoritative; the wallet bumps
+/// through [dailyBonusProvider].
+class DailyBonusSheet extends ConsumerStatefulWidget {
+  const DailyBonusSheet({super.key});
+
+  @override
+  ConsumerState<DailyBonusSheet> createState() => _DailyBonusSheetState();
+}
+
+class _DailyBonusSheetState extends ConsumerState<DailyBonusSheet> {
+  bool _claiming = false;
+
+  Future<void> _claim() async {
+    if (_claiming) return;
+    setState(() => _claiming = true);
+    try {
+      await ref.read(dailyBonusProvider.notifier).claim();
+    } catch (_) {
+      // Claim is idempotent server-side; a network hiccup just re-offers
+      // the sheet next session.
+    } finally {
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final streak =
+        ref.watch(meProvider).valueOrNull?.dailyStreak ?? 0;
+    // The day being claimed now (1-based); bonuses cap at day 7.
+    final claimDay = streak + 1;
+    final bonus = kDailyBonusByDay[min(claimDay, 7) - 1];
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: ParlorPanel(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                Strings.dailyBonusTitle,
+                textAlign: TextAlign.center,
+                style: TrudeType.display.copyWith(fontSize: 17),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                Strings.dailyBonusSubtitle,
+                textAlign: TextAlign.center,
+                style: TrudeType.cardIndex.copyWith(
+                  fontWeight: FontWeight.w400,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 12.5,
+                  color: TrudeColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  for (var day = 1; day <= 7; day++) ...[
+                    if (day > 1) const SizedBox(width: 5),
+                    Expanded(
+                      child: _StreakSlot(
+                        day: day,
+                        coins: kDailyBonusByDay[day - 1],
+                        state: day < min(claimDay, 7)
+                            ? _SlotState.past
+                            : (day == min(claimDay, 7)
+                                ? _SlotState.today
+                                : _SlotState.future),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 16),
+              BrassButton(
+                height: 50,
+                onPressed: _claiming ? null : _claim,
+                child: Text(Strings.dailyBonusClaim(bonus)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _SlotState { past, today, future }
+
+class _StreakSlot extends StatelessWidget {
+  const _StreakSlot({
+    required this.day,
+    required this.coins,
+    required this.state,
+  });
+
+  final int day;
+  final int coins;
+  final _SlotState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = state == _SlotState.today;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        gradient: today ? TrudeGradients.brass : null,
+        color: today ? null : TrudeColors.surfaceSunken,
+        borderRadius: BorderRadius.circular(TrudeDims.chipRadius),
+        border: Border.all(
+          color: today
+              ? TrudeColors.brassDark
+              : (state == _SlotState.past
+                  ? TrudeColors.brass.withValues(alpha: 0.55)
+                  : TrudeColors.hairline),
+        ),
+      ),
+      child: Column(
+        children: [
+          state == _SlotState.past
+              ? const Icon(Icons.check, size: 13, color: TrudeColors.brass)
+              : Text(
+                  '$coins',
+                  style: TrudeType.display.copyWith(
+                    fontSize: 13,
+                    height: 1.0,
+                    color: today
+                        ? TrudeColors.textOnBrass
+                        : TrudeColors.brassBright,
+                  ),
+                ),
+          const SizedBox(height: 2),
+          Text(
+            '$day',
+            style: TrudeType.etched.copyWith(
+              fontSize: 7.5,
+              letterSpacing: 0.5,
+              color: today
+                  ? TrudeColors.textOnBrass.withValues(alpha: 0.8)
+                  : TrudeColors.textMuted,
+            ),
+          ),
+        ],
       ),
     );
   }

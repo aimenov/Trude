@@ -13,6 +13,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/trude_theme.dart';
+import 'cosmetic_styles.dart';
 
 // ---------------------------------------------------------------------------
 // Suit pips
@@ -607,11 +608,15 @@ class CardFacePainter extends CustomPainter {
 // Card back
 // ---------------------------------------------------------------------------
 
-/// The card back: a symmetric brass guilloche lattice on [TrudeColors
-/// .cardBackTeal] inside an ivory frame, with a small central brass "T"
-/// medallion. Reveals nothing about the card — every back is identical.
+/// The card back: a symmetric guilloche lattice on the style's field inside a
+/// framed border, with a small central "T" medallion. Colors come from a
+/// [CardBackStyle] (default [CardBackStyle.classic] — the original teal and
+/// brass, bit-identical). Reveals nothing about the card — every back drawn
+/// with a given style is identical.
 class CardBackPainter extends CustomPainter {
-  const CardBackPainter();
+  const CardBackPainter({this.style = CardBackStyle.classic});
+
+  final CardBackStyle style;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -620,21 +625,21 @@ class CardBackPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final center = rect.center;
 
-    // Ivory frame with the same edge bevel as the face.
-    canvas.drawRect(rect, Paint()..color = TrudeColors.ivory);
+    // Frame (classic: ivory) with the same edge bevel as the face.
+    canvas.drawRect(rect, Paint()..color = style.frame);
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect.deflate(w * 0.015),
           Radius.circular(w * TrudeDims.cardRadiusFactor)),
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = w * 0.035
-        ..color = TrudeColors.ivoryShade,
+        ..color = style.frameShade,
     );
 
-    // Teal field.
+    // The colored field (classic: teal).
     final inner = RRect.fromRectAndRadius(
         rect.deflate(w * 0.075), Radius.circular(w * 0.055));
-    canvas.drawRRect(inner, Paint()..color = TrudeColors.cardBackTeal);
+    canvas.drawRRect(inner, Paint()..color = style.field);
 
     // Guilloche lattice: one cached wave-cable path, drawn along both
     // diagonals so the crossings weave a diamond field.
@@ -663,7 +668,7 @@ class CardBackPainter extends CustomPainter {
     final thread = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = max(0.4, w * 0.012)
-      ..color = TrudeColors.brass.withValues(alpha: 0.50);
+      ..color = style.lattice.withValues(alpha: 0.50);
     canvas.save();
     canvas.clipRRect(inner);
     canvas.translate(center.dx, center.dy);
@@ -673,27 +678,28 @@ class CardBackPainter extends CustomPainter {
     canvas.drawPath(lattice, thread);
     canvas.restore();
 
-    // Brass keyline around the teal field.
+    // Lattice-metal keyline around the field.
     canvas.drawRRect(
       inner,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = max(0.4, w * 0.012)
-        ..color = TrudeColors.brass.withValues(alpha: 0.75),
+        ..color = style.lattice.withValues(alpha: 0.75),
     );
 
-    // Central medallion: teal blank, double brass ring, serif "T".
+    // Central medallion: field-colored blank, double ring, serif "T".
     final r = w * 0.17;
-    canvas.drawCircle(
-        center, r + w * 0.03, Paint()..color = TrudeColors.cardBackTeal);
+    canvas.drawCircle(center, r + w * 0.03, Paint()..color = style.field);
     canvas.drawCircle(
       center,
       r,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = max(0.5, w * 0.016)
-        ..color = TrudeColors.brass,
+        ..color = style.lattice,
     );
+    // Inner shadow ring stays on the shared dark-metal token: it reads as
+    // recess shading, not as the style's metal, and works over every field.
     canvas.drawCircle(
       center,
       r * 0.80,
@@ -702,11 +708,12 @@ class CardBackPainter extends CustomPainter {
         ..strokeWidth = max(0.3, w * 0.007)
         ..color = TrudeColors.brassDark,
     );
-    final tp = cardTextPainter('T', w * 0.19, TrudeColors.brassBright,
+    final tp = cardTextPainter('T', w * 0.19, style.medallionInk,
         weight: FontWeight.w900);
     tp.paint(canvas, center - Offset(tp.width / 2, tp.height * 0.53));
   }
 
   @override
-  bool shouldRepaint(CardBackPainter oldDelegate) => false;
+  bool shouldRepaint(CardBackPainter oldDelegate) =>
+      oldDelegate.style.id != style.id;
 }

@@ -24,6 +24,26 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- AdMob app id — Google's public TEST app id, matching
+	     lib/core/ads/ad_config.dart.
+	     TODO(release): replace with the real AdMob iOS app id before any
+	     App Store build (a wrong/missing id crashes at SDK init). -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<!-- SKAdNetwork attribution for AdMob.
+	     TODO(release): paste Google's full current SKAdNetworkItems list
+	     (https://developers.google.com/admob/ios/quick-start#update_your_infoplist)
+	     — only Google's own entry is included here.
+	     NOTE (ATT): v1 serves non-personalized test ads and does NOT request
+	     App Tracking Transparency; before serving personalized ads, add
+	     NSUserTrackingUsageDescription and the ATT prompt flow. -->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

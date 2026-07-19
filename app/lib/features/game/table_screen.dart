@@ -17,6 +17,7 @@ import 'anim/table_anchors.dart';
 import 'anim/table_fx_layer.dart';
 import 'logic/rules_view.dart' as rules;
 import 'table_scale.dart';
+import 'widgets/cosmetic_styles.dart';
 import 'widgets/my_hand.dart';
 import 'widgets/pile_stack.dart';
 import 'widgets/rank_strip.dart';
@@ -287,7 +288,9 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         fit: StackFit.expand,
         children: [
           // The parlor: candle-lit felt, rail, and monogram behind everything.
-          Positioned.fill(child: TableFeltBackground(speed: speed)),
+          Positioned.fill(child: TableFeltBackground(
+              speed: speed,
+              style: ref.watch(selectedFeltStyleProvider))),
           SafeArea(
             child: Listener(
               behavior: HitTestBehavior.translucent,

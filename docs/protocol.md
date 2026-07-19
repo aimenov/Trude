@@ -73,21 +73,56 @@ Broadcast as `events { actionCount: number, events: Event[] }` — ordered; clie
 | `roomConfigured` | `{ deckSize, turnTimerSec, maxPlayers }` | |
 | `gameOver` | `{ loserSeat, loserUserId, jokerCard: Card, placements: [{ userId, seat, placement }], stats: { [userId]: { liesSurvived, liesCaught, checksWon, checksLost, cardsPickedUp, quadsDiscarded, jokerPassed, maxHandSize, truthfulThrows, lyingThrows, firstOut, wasEverCaught, jokerSmuggles } } }` | stats is a map keyed by userId; results screen; room returns to lobby phase afterwards, seats kept |
 | `achievementUnlocked` | (one client) `{ key, title, description }` | toast deferred by AnimationQueue |
+| `rewards` | (one client) `RewardsMessage` — see below | post-game economy summary, right after `gameOver`; sent ONLY to seats that joined with `supportsRewards: true` (old clients never see it) |
 | `reaction` | `{ seat, emoji }` | burst overlay |
 | `error` | (one client) `{ code: string, message: string }` | codes listed above + `STALE_ACTION`, `NOT_IN_ROOM` |
 
+### `rewards` message (RewardsMessage)
+
+```
+{
+  gameId: string,              // persisted GameResult id — pass to GET /ads/token?kind=double&gameId=…
+  achievements: [{ key, title, description }],
+  coins: number,               // GAME_AWARD coins for this game (after the 750/day cap clamp)
+  ratingDelta: number,         // 0 when not rated
+  newRating: number,
+  rated: boolean,              // rated ⇔ public && ≥3 players && actionCount ≥ 20
+  quests: [{ key, progress, target, completed, coins }],  // today's 3 quests post-game; coins > 0 on first completion; [] when not rated
+  balance: number              // wallet after all grants
+}
+```
+
+Join options gained `supportsRewards?: boolean` — clients that understand the `rewards` message pass `true` at join/create.
+
+Economy rules baked into the server (see `packages/server/src/economy/`): placement coins 3p 25/12/5 … 8p 50/36/26/18/13/9/6/5 (winner `25+5×(N−3)`, floor 5); games with `actionCount < 20` award nothing; private rooms: coins ×0.5, never rated, no quest progress; per-user daily cap on game coins 750; every coin mutation is a `CoinLedger` row with a unique idempotency key.
+
 ## HTTP API (Express, same origin)
+
+All error responses are `{ error: CODE }`. Authed routes return `401 UNAUTHORIZED` without a valid Bearer token.
 
 | Route | Body → Response |
 |---|---|
 | `POST /auth/guest` | `{ deviceId, nickname }` → `{ token, userId, nickname, avatar }` |
 | `POST /auth/refresh` | (Bearer) → `{ token }` |
 | `POST /auth/google` / `POST /auth/apple` | `{ idToken }` (Bearer = current guest) → `{ token, userId, merged: boolean }` |
-| `GET /me` | (Bearer) → profile + lifetime stats |
-| `PATCH /me` | `{ nickname?, avatar? }` (profanity-checked) → profile |
+| `GET /me` | (Bearer) → profile + lifetime stats + `coins, rating, premium, dailyStreak, dailyClaimedToday, selected: { cardBack, felt }` |
+| `PATCH /me` | `{ nickname?, avatar?, selectedCardBack?, selectedFelt? }` (profanity-checked; cosmetics ownership-validated → `403 NOT_OWNED`) → profile + `selected` |
+| `DELETE /me` | (Bearer) → `204` — deletes the account and every dependent row (wallet, ledger, rating, quests, cosmetics, receipts). Client confirms twice. |
 | `GET /me/achievements` | (Bearer) → `{ unlocked: [...], catalog: [{ key, title, description, threshold, progress }] }` |
+| `GET /leaderboard?scope=weekly\|alltime&limit=50` | (Bearer; scope default `alltime`, limit clamped 1..100) → `{ scope, seasonKey?, entries: [{ rank, userId, nickname, avatar, value, gamesRated }], me: { rank, value, gamesRated } \| null }`. `value` = rating (alltime) or season points (weekly, ISO-week key e.g. `2026-W29`; new week = fresh board). `me.rank` = count(value > mine) + 1; `me` is null for unrated users. |
+| `POST /me/daily/claim` | (Bearer) idempotent, always 200 → `{ claimed, day, streak, coins, balance, nextBonus }`. Streak day 1..7+ → 10/15/20/30/40/50/60; a missed UTC day resets the streak. |
+| `GET /me/quests` | (Bearer) → `{ day, quests: [{ key, target, reward, progress, completed }] }` — the 3 deterministic quests of the UTC day. |
+| `GET /catalog/cosmetics` | (public) → `{ items: [{ key, kind: "cardBack"\|"felt", price, premiumOnly }] }` |
+| `GET /me/cosmetics` | (Bearer) → `{ owned: [keys], selected: { cardBack, felt } }` — defaults `cb_classic`/`felt_classic` always owned. |
+| `POST /shop/buy` | (Bearer) `{ itemKey }` → 200 `{ itemKey, balance }` \| `404 UNKNOWN_ITEM` \| `409 ALREADY_OWNED` \| `402 INSUFFICIENT_FUNDS` \| `403 PREMIUM_REQUIRED` |
+| `GET /ads/token?kind=shop\|double&gameId?` | (Bearer; `gameId` required for `double`) → `{ token, remainingToday }` — single-use JWT, 5 min TTL. |
+| `POST /ads/reward` | (Bearer) `{ token }` → 200 `{ coins, balance, remainingToday }` \| `401 BAD_TOKEN` \| `409 TOKEN_USED` \| `429 DAILY_CAP`. `shop`: +25 coins, 5/day. `double`: grants that game's GAME_AWARD amount once per game (`double:{gameId}:{userId}`), 10/day. |
+| `POST /iap/google` | (Bearer) `{ purchaseToken, productId }` → 200 `{ productId, granted: { coins, premium }, balance, premium, alreadyProcessed }` \| `400 INVALID_RECEIPT` \| `404 UNKNOWN_PRODUCT` \| `409 RECEIPT_OWNED_BY_OTHER_USER`. Replay of a processed order → 200 with `alreadyProcessed: true`, zero grant. Dev validator accepts `fake:{orderId}:{productId}`. |
+| `POST /iap/apple` | (Bearer) `{ receipt }` → same contract as `/iap/google` |
 | `GET /rooms/by-code/:code` | → `{ roomId }` or 404 |
 | `GET /health` | → `{ ok: true }` |
+
+IAP products: `coins_small` 500, `coins_medium` 1800, `coins_large` 4800, `coins_huge` 12000 (consumable); `premium_upgrade` → `premium: true` + premium-only cosmetics granted once.
 
 ## Room lifecycle notes
 

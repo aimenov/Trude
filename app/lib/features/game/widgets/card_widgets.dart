@@ -7,21 +7,24 @@ library;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/strings.dart';
 import '../../../core/theme/trude_theme.dart';
 import '../anim/motion_jitter.dart';
 import '../anim/motion_spec.dart';
 import 'card_painters.dart';
+import 'cosmetic_styles.dart';
 
 const kCardAspect = 68 / 48; // height / width of every card widget
 
-class TrudeCardBack extends StatelessWidget {
+class TrudeCardBack extends ConsumerWidget {
   const TrudeCardBack({
     super.key,
     this.width = 48,
     this.shimmer = false,
     this.selected = false,
+    this.style,
   });
 
   final double width;
@@ -33,14 +36,23 @@ class TrudeCardBack extends StatelessWidget {
   /// mirroring [TrudeCardFace.selected].
   final bool selected;
 
+  /// Explicit cosmetic style (shop previews). When null — every in-game
+  /// render site — the equipped style from [selectedCardBackStyleProvider]
+  /// is used, so call sites never pass it.
+  final CardBackStyle? style;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Explicit annotation: with a nullable left operand of `??`, Dart would
+    // otherwise infer `ref.watch<CardBackStyle?>` from the context type.
+    final CardBackStyle resolved =
+        style ?? ref.watch(selectedCardBackStyleProvider);
     final radius = BorderRadius.circular(width * TrudeDims.cardRadiusFactor);
     final card = Container(
       width: width,
       height: width * kCardAspect,
       decoration: BoxDecoration(
-        color: TrudeColors.ivory,
+        color: resolved.frame,
         borderRadius: radius,
         boxShadow: [
           if (selected)
@@ -58,8 +70,8 @@ class TrudeCardBack extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: radius,
-        child: const CustomPaint(
-          painter: CardBackPainter(),
+        child: CustomPaint(
+          painter: CardBackPainter(style: resolved),
           isComplex: true,
           willChange: false,
         ),

@@ -76,6 +76,7 @@ interface Bot {
   clientSeq: number;
   retired: string[];
   gameOver: Promise<Record<string, unknown>>;
+  rewards: Promise<Record<string, unknown>>;
   leaks: string[];
   errors: string[];
   trace: string[];
@@ -84,9 +85,11 @@ interface Bot {
 
 function attachBot(room: SdkRoom, nickname: string, userId: string, token: string): Bot {
   let resolveOver!: (e: Record<string, unknown>) => void;
+  let resolveRewards!: (e: Record<string, unknown>) => void;
   const bot: Bot = {
     nickname, userId, token, room, seat: -1, hand: [], actionCount: -1, clientSeq: 0,
-    retired: [], gameOver: new Promise((r) => { resolveOver = r; }), leaks: [], errors: [], trace: [],
+    retired: [], gameOver: new Promise((r) => { resolveOver = r; }),
+    rewards: new Promise((r) => { resolveRewards = r; }), leaks: [], errors: [], trace: [],
     lastThrowCount: 1,
   };
 
@@ -105,6 +108,7 @@ function attachBot(room: SdkRoom, nickname: string, userId: string, token: strin
   room.onMessage('reaction', () => undefined);
   room.onMessage('seatSwapRequested', () => undefined);
   room.onMessage('achievementUnlocked', () => undefined);
+  room.onMessage('rewards', (msg: Record<string, unknown>) => resolveRewards(msg));
 
   room.onMessage('events', (batch: { actionCount: number; events: Record<string, unknown>[] }) => {
     scanForCards(batch, 'events', bot.leaks);
@@ -180,11 +184,15 @@ describe('full game over real websockets', () => {
     const users = await Promise.all([guestToken('Alice'), guestToken('Boris'), guestToken('Chika')]);
 
     const sdk = new SdkClient(WS);
-    const adminRoom = await sdk.create('trude', { token: users[0]!.token, name: 'Test room', deckSize: 37 });
+    const adminRoom = await sdk.create('trude', {
+      token: users[0]!.token, name: 'Test room', deckSize: 37, supportsRewards: true,
+    });
     const bots: Bot[] = [attachBot(adminRoom, 'Alice', users[0]!.userId, users[0]!.token)];
 
     for (let i = 1; i < 3; i++) {
-      const room = await new SdkClient(WS).joinById(adminRoom.roomId, { token: users[i]!.token });
+      const room = await new SdkClient(WS).joinById(adminRoom.roomId, {
+        token: users[i]!.token, supportsRewards: true,
+      });
       bots.push(attachBot(room, ['', 'Boris', 'Chika'][i]!, users[i]!.userId, users[i]!.token));
     }
 
@@ -219,13 +227,33 @@ describe('full game over real websockets', () => {
       expect(bot.errors, `${bot.nickname} got errors: ${bot.errors.join('; ')}`).toEqual([]);
     }
 
-    // Stats persisted for every participant.
+    // Every bot opted into rewards and gets its post-game economy summary.
+    for (const bot of bots) {
+      const rewards = await bot.rewards;
+      expect(rewards['gameId'], `${bot.nickname} rewards.gameId`).toBeTruthy();
+      expect(rewards['rated'], `${bot.nickname} rewards.rated`).toBe(true);
+      expect(rewards['balance'] as number, `${bot.nickname} rewards.balance`).toBeGreaterThan(0);
+      expect(Array.isArray(rewards['quests']), `${bot.nickname} rewards.quests`).toBe(true);
+      expect((rewards['quests'] as unknown[]).length).toBe(3);
+      expect(typeof rewards['newRating']).toBe('number');
+    }
+
+    // Stats + coins persisted for every participant.
     for (const user of users) {
       const me = await (await fetch(`${HTTP}/me`, { headers: { authorization: `Bearer ${user.token}` } })).json() as {
-        stats: { gamesPlayed: number };
+        stats: { gamesPlayed: number }; coins: number;
       };
       expect(me.stats.gamesPlayed).toBe(1);
+      expect(me.coins).toBeGreaterThan(0);
     }
+
+    // All-time leaderboard now ranks the three participants.
+    const board = await (await fetch(`${HTTP}/leaderboard?scope=alltime`, {
+      headers: { authorization: `Bearer ${users[0]!.token}` },
+    })).json() as { entries: { userId: string; rank: number }[]; me: { rank: number } | null };
+    const ranked = board.entries.filter((e) => users.some((u) => u.userId === e.userId));
+    expect(ranked).toHaveLength(3);
+    expect(board.me).not.toBeNull();
 
     for (const bot of bots) await bot.room.leave();
   });

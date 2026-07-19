@@ -205,6 +205,74 @@ abstract final class Strings {
     return v == '~' ? fallback : v;
   }
 
+  // Rating tiers & leaderboard
+  static String tierName(String key) => _l.tierName(key);
+  static String get rankUpToast => _l.rankUpToast;
+  static String get leaderboardTitle => _l.leaderboardTitle;
+  static String get leaderboardWeekly => _l.leaderboardWeekly;
+  static String get leaderboardAlltime => _l.leaderboardAlltime;
+  static String get leaderboardEmpty => _l.leaderboardEmpty;
+  static String get leaderboardLoadFailed => _l.leaderboardLoadFailed;
+  static String leaderboardMyRank(int rank) => _l.leaderboardMyRank(rank);
+  static String gamesRatedLabel(int games) => _l.gamesRatedLabel(games);
+
+  // Shop
+  static String get shopTitle => _l.shopTitle;
+  static String get shopCardBacksSection => _l.shopCardBacksSection;
+  static String get shopFeltsSection => _l.shopFeltsSection;
+  static String get shopCoinsSection => _l.shopCoinsSection;
+  static String get shopPremiumSection => _l.shopPremiumSection;
+  static String shopWatchAd(int coins) => _l.shopWatchAd(coins);
+  static String get shopOwned => _l.shopOwned;
+  static String get shopEquipped => _l.shopEquipped;
+  static String get shopPremiumLock => _l.shopPremiumLock;
+  static String get shopBuyConfirmTitle => _l.shopBuyConfirmTitle;
+  static String shopBuyConfirmBody(String item, int coins) =>
+      _l.shopBuyConfirmBody(item, coins);
+  static String get shopInsufficientFunds => _l.shopInsufficientFunds;
+  static String get shopBillingUnavailable => _l.shopBillingUnavailable;
+  static String get shopPurchaseWarningTitle => _l.shopPurchaseWarningTitle;
+  static String get shopPurchaseWarningBody => _l.shopPurchaseWarningBody;
+  static String get restorePurchases => _l.restorePurchases;
+  static String get restoreDone => _l.restoreDone;
+  static String get premiumTitle => _l.premiumTitle;
+  static String get premiumPitch => _l.premiumPitch;
+  static String get premiumOwned => _l.premiumOwned;
+  static String coinPackLabel(int coins) => _l.coinPackLabel(coins);
+  static String get buy => _l.buy;
+
+  /// Localized cosmetic name by catalog key; unknown keys render the raw key
+  /// (the ICU select falls through to `other{{key}}`).
+  static String cosmeticName(String key) => _l.cosmeticName(key);
+
+  // Daily bonus
+  static String get dailyBonusTitle => _l.dailyBonusTitle;
+  static String get dailyBonusSubtitle => _l.dailyBonusSubtitle;
+  static String dailyBonusDay(int day) => _l.dailyBonusDay(day);
+  static String dailyBonusClaim(int coins) => _l.dailyBonusClaim(coins);
+
+  // Quests
+  static String get questsTitle => _l.questsTitle;
+  static String questRewardChip(int coins) => _l.questRewardChip(coins);
+  static String questTitle(String key) => _l.questTitle(key);
+  static String questDescription(String key) => _l.questDescription(key);
+
+  // Rewards panel (results)
+  static String get rewardsPanelTitle => _l.rewardsPanelTitle;
+  static String get doubleWinnings => _l.doubleWinnings;
+  static String get doubledLabel => _l.doubledLabel;
+  static String get unratedGame => _l.unratedGame;
+
+  // Delete account
+  static String get deleteAccount => _l.deleteAccount;
+  static String get deleteAccountTitle => _l.deleteAccountTitle;
+  static String get deleteAccountBody => _l.deleteAccountBody;
+  static String get deleteAccountSecondTitle => _l.deleteAccountSecondTitle;
+  static String get deleteAccountSecondBody => _l.deleteAccountSecondBody;
+  static String get deleteAccountConfirm => _l.deleteAccountConfirm;
+  static String deleteAccountFailed(String reason) =>
+      _l.deleteAccountFailed(reason);
+
   // Errors
   static String serverError(String code, String message) =>
       message.isEmpty ? code : '$code: $message';

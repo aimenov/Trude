@@ -763,6 +763,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{key, select, best_liar{Win 10 games} pathological_truther{Win a game without a single lie (at least 8 truthful throws)} human_polygraph{Catch 25 liars} gullible{Flip a truthful card 15 times} poker_face{Get away with 50 lies} smuggler{Sneak the joker into someone else\'s hand 10 times} hot_potato{Pass the joker on twice in a single game} jokers_best_friend{Lose 5 games — the joker just likes you} demolition_crew{Discard 10 four-of-a-kinds} comeback_season{Win a game after holding 20 or more cards} serial_winner{Win 3 games in a row} it_wasnt_me{Win a game where you lied at least 3 times and were never caught} other{~}}'**
   String achievementDescription(String key);
+
+  /// No description provided for @tierName.
+  ///
+  /// In en, this message translates to:
+  /// **'{tier, select, novice{Novice} cardplayer{Card Player} rogue{Rogue} sharp{Card Sharp} hustler{Hustler} legend{Parlor Legend} other{{tier}}}'**
+  String tierName(String tier);
+
+  /// No description provided for @rankUpToast.
+  ///
+  /// In en, this message translates to:
+  /// **'New rank!'**
+  String get rankUpToast;
+
+  /// No description provided for @leaderboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll of Honor'**
+  String get leaderboardTitle;
+
+  /// No description provided for @leaderboardWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'This Week'**
+  String get leaderboardWeekly;
+
+  /// No description provided for @leaderboardAlltime.
+  ///
+  /// In en, this message translates to:
+  /// **'All Time'**
+  String get leaderboardAlltime;
+
+  /// No description provided for @leaderboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No names on the board yet — play a public game'**
+  String get leaderboardEmpty;
+
+  /// No description provided for @leaderboardLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the board — pull to retry'**
+  String get leaderboardLoadFailed;
+
+  /// No description provided for @leaderboardMyRank.
+  ///
+  /// In en, this message translates to:
+  /// **'Your place: {rank}'**
+  String leaderboardMyRank(int rank);
+
+  /// No description provided for @gamesRatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{games, plural, =1{{games} rated game} other{{games} rated games}}'**
+  String gamesRatedLabel(num games);
+
+  /// No description provided for @shopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The Shop'**
+  String get shopTitle;
+
+  /// No description provided for @shopCardBacksSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Card Backs'**
+  String get shopCardBacksSection;
+
+  /// No description provided for @shopFeltsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Table Felts'**
+  String get shopFeltsSection;
+
+  /// No description provided for @shopCoinsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Coins'**
+  String get shopCoinsSection;
+
+  /// No description provided for @shopPremiumSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Patronage'**
+  String get shopPremiumSection;
+
+  /// No description provided for @shopWatchAd.
+  ///
+  /// In en, this message translates to:
+  /// **'+{coins} for a word from our patron'**
+  String shopWatchAd(int coins);
+
+  /// No description provided for @shopOwned.
+  ///
+  /// In en, this message translates to:
+  /// **'Owned'**
+  String get shopOwned;
+
+  /// No description provided for @shopEquipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipped'**
+  String get shopEquipped;
+
+  /// No description provided for @shopPremiumLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Patrons only'**
+  String get shopPremiumLock;
+
+  /// No description provided for @shopBuyConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A purchase'**
+  String get shopBuyConfirmTitle;
+
+  /// No description provided for @shopBuyConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy “{item}” for {coins, plural, =1{{coins} coin} other{{coins} coins}}?'**
+  String shopBuyConfirmBody(String item, num coins);
+
+  /// No description provided for @shopInsufficientFunds.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough coins in your purse'**
+  String get shopInsufficientFunds;
+
+  /// No description provided for @shopBillingUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This shelf is open in the mobile parlor'**
+  String get shopBillingUnavailable;
+
+  /// No description provided for @shopPurchaseWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you buy'**
+  String get shopPurchaseWarningTitle;
+
+  /// No description provided for @shopPurchaseWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases are tied to the guest account on this device. Deleting the app or switching devices may lose them — proper sign-in arrives later.'**
+  String get shopPurchaseWarningBody;
+
+  /// No description provided for @restorePurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get restorePurchases;
+
+  /// No description provided for @restoreDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases restored'**
+  String get restoreDone;
+
+  /// No description provided for @premiumTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Patron of the Parlor'**
+  String get premiumTitle;
+
+  /// No description provided for @premiumPitch.
+  ///
+  /// In en, this message translates to:
+  /// **'The gilded card back, a patron\'s mark — and no ads, ever.'**
+  String get premiumPitch;
+
+  /// No description provided for @premiumOwned.
+  ///
+  /// In en, this message translates to:
+  /// **'You are a patron of the parlor'**
+  String get premiumOwned;
+
+  /// No description provided for @coinPackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{coins, plural, =1{{coins} coin} other{{coins} coins}}'**
+  String coinPackLabel(num coins);
+
+  /// No description provided for @buy.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy'**
+  String get buy;
+
+  /// No description provided for @cosmeticName.
+  ///
+  /// In en, this message translates to:
+  /// **'{key, select, cb_classic{Classic} cb_crimson{Crimson} cb_noir{Noir} cb_royal{Royal} cb_imperial{Imperial} cb_gilded{Gilded} felt_classic{Classic Felt} felt_burgundy{Burgundy} felt_navy{Navy} felt_midnight{Midnight} other{{key}}}'**
+  String cosmeticName(String key);
+
+  /// No description provided for @dailyBonusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The house honors its regulars'**
+  String get dailyBonusTitle;
+
+  /// No description provided for @dailyBonusSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Come back tomorrow — the streak grows'**
+  String get dailyBonusSubtitle;
+
+  /// No description provided for @dailyBonusDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day {day}'**
+  String dailyBonusDay(int day);
+
+  /// No description provided for @dailyBonusClaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim {coins}'**
+  String dailyBonusClaim(int coins);
+
+  /// No description provided for @questsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tonight\'s Errands'**
+  String get questsTitle;
+
+  /// No description provided for @questRewardChip.
+  ///
+  /// In en, this message translates to:
+  /// **'+{coins}'**
+  String questRewardChip(int coins);
+
+  /// No description provided for @questTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{key, select, q_play_3{Table Regular} q_win_1{Take the Pot} q_catch_3{Sharp Eye} q_survive_5{Smooth Talker} q_truth_15{Honest Evening} q_quad_1{Clean Sweep} q_pass_joker{Hot Hands} q_pickup_20{Take Your Lumps} q_smuggle_1{Sleight of Hand} other{{key}}}'**
+  String questTitle(String key);
+
+  /// No description provided for @questDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'{key, select, q_play_3{Play 3 games} q_win_1{Win a game} q_catch_3{Catch 3 liars} q_survive_5{Get away with 5 lies} q_truth_15{Make 15 truthful throws} q_quad_1{Discard a four-of-a-kind} q_pass_joker{Pass the joker on} q_pickup_20{Pick up 20 cards} q_smuggle_1{Smuggle the joker into a throw} other{{key}}}'**
+  String questDescription(String key);
+
+  /// No description provided for @rewardsPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The evening\'s take'**
+  String get rewardsPanelTitle;
+
+  /// No description provided for @doubleWinnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Double your winnings'**
+  String get doubleWinnings;
+
+  /// No description provided for @doubledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Doubled'**
+  String get doubledLabel;
+
+  /// No description provided for @unratedGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Friendly game — unrated'**
+  String get unratedGame;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Coins, rating, purchases, and progress will be gone for good.'**
+  String get deleteAccountBody;
+
+  /// No description provided for @deleteAccountSecondTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No way back'**
+  String get deleteAccountSecondTitle;
+
+  /// No description provided for @deleteAccountSecondBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone. Delete the account?'**
+  String get deleteAccountSecondBody;
+
+  /// No description provided for @deleteAccountConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteAccountConfirm;
+
+  /// No description provided for @deleteAccountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete the account: {reason}'**
+  String deleteAccountFailed(String reason);
 }
 
 class _AppLocalizationsDelegate

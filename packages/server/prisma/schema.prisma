@@ -8,14 +8,25 @@ datasource db {
 }
 
 model User {
-  id           String            @id @default(uuid())
-  nickname     String
-  avatar       String            @default("a0")
-  deviceId     String?           @unique
-  createdAt    DateTime          @default(now())
-  identities   Identity[]
-  stats        PlayerStats?
-  achievements UserAchievement[]
+  id               String              @id @default(uuid())
+  nickname         String
+  avatar           String              @default("a0")
+  deviceId         String?             @unique
+  createdAt        DateTime            @default(now())
+  premium          Boolean             @default(false)
+  selectedCardBack String              @default("cb_classic")
+  selectedFelt     String              @default("felt_classic")
+  identities       Identity[]
+  stats            PlayerStats?
+  achievements     UserAchievement[]
+  wallet           Wallet?
+  ledger           CoinLedger[]
+  rating           Rating?
+  seasonScores     SeasonScore[]
+  dailyState       DailyState?
+  questProgress    QuestProgress[]
+  cosmetics        CosmeticOwnership[]
+  iapReceipts      IapReceipt[]
 }
 
 model Identity {
@@ -65,4 +76,86 @@ model GameResult {
   loserUserId  String?
   participants Json // [{userId, placement}]
   endedAt      DateTime @default(now())
+  isPrivate    Boolean  @default(false)
+  actionCount  Int      @default(0)
+  rated        Boolean  @default(false)
+}
+
+model Wallet {
+  userId String @id
+  coins  Int    @default(0)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CoinLedger {
+  id             String   @id @default(uuid())
+  userId         String
+  delta          Int
+  reason         String // GAME_AWARD | DAILY_BONUS | QUEST | QUEST_BONUS | SHOP_PURCHASE | AD_REWARD | AD_DOUBLE | IAP
+  idempotencyKey String   @unique
+  meta           Json?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, reason, createdAt])
+}
+
+model Rating {
+  userId     String @id
+  rating     Int    @default(1000)
+  peakRating Int    @default(1000)
+  gamesRated Int    @default(0)
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([rating])
+}
+
+model SeasonScore {
+  seasonKey  String
+  userId     String
+  points     Int    @default(0)
+  gamesRated Int    @default(0)
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([seasonKey, userId])
+  @@index([seasonKey, points])
+}
+
+model DailyState {
+  userId       String  @id
+  lastClaimDay String?
+  streak       Int     @default(0)
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model QuestProgress {
+  userId      String
+  day         String
+  questKey    String
+  progress    Int       @default(0)
+  completedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day, questKey])
+}
+
+model CosmeticOwnership {
+  userId     String
+  itemKey    String
+  acquiredAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, itemKey])
+}
+
+model IapReceipt {
+  id         String   @id @default(uuid())
+  userId     String
+  platform   String // google | apple
+  productId  String
+  orderId    String   @unique
+  status     String // GRANTED
+  rawPayload Json?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

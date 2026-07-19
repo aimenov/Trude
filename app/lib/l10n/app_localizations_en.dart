@@ -586,4 +586,254 @@ class AppLocalizationsEn extends AppLocalizations {
     });
     return '$_temp0';
   }
+
+  @override
+  String tierName(String tier) {
+    String _temp0 = intl.Intl.selectLogic(tier, {
+      'novice': 'Novice',
+      'cardplayer': 'Card Player',
+      'rogue': 'Rogue',
+      'sharp': 'Card Sharp',
+      'hustler': 'Hustler',
+      'legend': 'Parlor Legend',
+      'other': '$tier',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get rankUpToast => 'New rank!';
+
+  @override
+  String get leaderboardTitle => 'Roll of Honor';
+
+  @override
+  String get leaderboardWeekly => 'This Week';
+
+  @override
+  String get leaderboardAlltime => 'All Time';
+
+  @override
+  String get leaderboardEmpty =>
+      'No names on the board yet — play a public game';
+
+  @override
+  String get leaderboardLoadFailed =>
+      'Couldn\'t load the board — pull to retry';
+
+  @override
+  String leaderboardMyRank(int rank) {
+    return 'Your place: $rank';
+  }
+
+  @override
+  String gamesRatedLabel(num games) {
+    String _temp0 = intl.Intl.pluralLogic(
+      games,
+      locale: localeName,
+      other: '$games rated games',
+      one: '$games rated game',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shopTitle => 'The Shop';
+
+  @override
+  String get shopCardBacksSection => 'Card Backs';
+
+  @override
+  String get shopFeltsSection => 'Table Felts';
+
+  @override
+  String get shopCoinsSection => 'Coins';
+
+  @override
+  String get shopPremiumSection => 'Patronage';
+
+  @override
+  String shopWatchAd(int coins) {
+    return '+$coins for a word from our patron';
+  }
+
+  @override
+  String get shopOwned => 'Owned';
+
+  @override
+  String get shopEquipped => 'Equipped';
+
+  @override
+  String get shopPremiumLock => 'Patrons only';
+
+  @override
+  String get shopBuyConfirmTitle => 'A purchase';
+
+  @override
+  String shopBuyConfirmBody(String item, num coins) {
+    String _temp0 = intl.Intl.pluralLogic(
+      coins,
+      locale: localeName,
+      other: '$coins coins',
+      one: '$coins coin',
+    );
+    return 'Buy “$item” for $_temp0?';
+  }
+
+  @override
+  String get shopInsufficientFunds => 'Not enough coins in your purse';
+
+  @override
+  String get shopBillingUnavailable =>
+      'This shelf is open in the mobile parlor';
+
+  @override
+  String get shopPurchaseWarningTitle => 'Before you buy';
+
+  @override
+  String get shopPurchaseWarningBody =>
+      'Purchases are tied to the guest account on this device. Deleting the app or switching devices may lose them — proper sign-in arrives later.';
+
+  @override
+  String get restorePurchases => 'Restore purchases';
+
+  @override
+  String get restoreDone => 'Purchases restored';
+
+  @override
+  String get premiumTitle => 'Patron of the Parlor';
+
+  @override
+  String get premiumPitch =>
+      'The gilded card back, a patron\'s mark — and no ads, ever.';
+
+  @override
+  String get premiumOwned => 'You are a patron of the parlor';
+
+  @override
+  String coinPackLabel(num coins) {
+    String _temp0 = intl.Intl.pluralLogic(
+      coins,
+      locale: localeName,
+      other: '$coins coins',
+      one: '$coins coin',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get buy => 'Buy';
+
+  @override
+  String cosmeticName(String key) {
+    String _temp0 = intl.Intl.selectLogic(key, {
+      'cb_classic': 'Classic',
+      'cb_crimson': 'Crimson',
+      'cb_noir': 'Noir',
+      'cb_royal': 'Royal',
+      'cb_imperial': 'Imperial',
+      'cb_gilded': 'Gilded',
+      'felt_classic': 'Classic Felt',
+      'felt_burgundy': 'Burgundy',
+      'felt_navy': 'Navy',
+      'felt_midnight': 'Midnight',
+      'other': '$key',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyBonusTitle => 'The house honors its regulars';
+
+  @override
+  String get dailyBonusSubtitle => 'Come back tomorrow — the streak grows';
+
+  @override
+  String dailyBonusDay(int day) {
+    return 'Day $day';
+  }
+
+  @override
+  String dailyBonusClaim(int coins) {
+    return 'Claim $coins';
+  }
+
+  @override
+  String get questsTitle => 'Tonight\'s Errands';
+
+  @override
+  String questRewardChip(int coins) {
+    return '+$coins';
+  }
+
+  @override
+  String questTitle(String key) {
+    String _temp0 = intl.Intl.selectLogic(key, {
+      'q_play_3': 'Table Regular',
+      'q_win_1': 'Take the Pot',
+      'q_catch_3': 'Sharp Eye',
+      'q_survive_5': 'Smooth Talker',
+      'q_truth_15': 'Honest Evening',
+      'q_quad_1': 'Clean Sweep',
+      'q_pass_joker': 'Hot Hands',
+      'q_pickup_20': 'Take Your Lumps',
+      'q_smuggle_1': 'Sleight of Hand',
+      'other': '$key',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String questDescription(String key) {
+    String _temp0 = intl.Intl.selectLogic(key, {
+      'q_play_3': 'Play 3 games',
+      'q_win_1': 'Win a game',
+      'q_catch_3': 'Catch 3 liars',
+      'q_survive_5': 'Get away with 5 lies',
+      'q_truth_15': 'Make 15 truthful throws',
+      'q_quad_1': 'Discard a four-of-a-kind',
+      'q_pass_joker': 'Pass the joker on',
+      'q_pickup_20': 'Pick up 20 cards',
+      'q_smuggle_1': 'Smuggle the joker into a throw',
+      'other': '$key',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get rewardsPanelTitle => 'The evening\'s take';
+
+  @override
+  String get doubleWinnings => 'Double your winnings';
+
+  @override
+  String get doubledLabel => 'Doubled';
+
+  @override
+  String get unratedGame => 'Friendly game — unrated';
+
+  @override
+  String get deleteAccount => 'Delete account';
+
+  @override
+  String get deleteAccountTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountBody =>
+      'Coins, rating, purchases, and progress will be gone for good.';
+
+  @override
+  String get deleteAccountSecondTitle => 'No way back';
+
+  @override
+  String get deleteAccountSecondBody =>
+      'This cannot be undone. Delete the account?';
+
+  @override
+  String get deleteAccountConfirm => 'Delete';
+
+  @override
+  String deleteAccountFailed(String reason) {
+    return 'Couldn\'t delete the account: $reason';
+  }
 }

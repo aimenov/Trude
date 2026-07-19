@@ -2,9 +2,10 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { ACHIEVEMENTS } from '../achievements/definitions.js';
+import { MetaError } from '../store/store.js';
 import type { Store } from '../store/store.js';
-import { signToken, verifyToken } from './jwt.js';
-import type { AuthClaims } from './jwt.js';
+import { bearer } from './bearer.js';
+import { signToken } from './jwt.js';
 
 // Minimal launch list; extend per locale. Checked as substrings, lowercase.
 const PROFANITY = ['fuck', 'shit', 'cunt', 'nigg', 'хуй', 'пизд', 'ебан', 'ебат', 'блядь', 'сука'];
@@ -23,17 +24,9 @@ const guestBody = z.object({
 const patchMeBody = z.object({
   nickname: z.string().min(2).max(16).optional(),
   avatar: z.string().min(1).max(8).optional(),
+  selectedCardBack: z.string().min(1).max(64).optional(),
+  selectedFelt: z.string().min(1).max(64).optional(),
 });
-
-function bearer(req: Request): AuthClaims | null {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) return null;
-  try {
-    return verifyToken(header.slice(7));
-  } catch {
-    return null;
-  }
-}
 
 export function authRoutes(store: Store): Router {
   const router = Router();
@@ -65,8 +58,13 @@ export function authRoutes(store: Store): Router {
     if (!claims) return res.status(401).json({ error: 'UNAUTHORIZED' });
     const user = await store.getUser(claims.sub);
     if (!user) return res.status(404).json({ error: 'NOT_FOUND' });
-    const stats = await store.getStats(user.id);
-    return res.json({ userId: user.id, nickname: user.nickname, avatar: user.avatar, stats });
+    const [stats, meta] = await Promise.all([store.getStats(user.id), store.getMetaProfile(user.id)]);
+    return res.json({
+      userId: user.id, nickname: user.nickname, avatar: user.avatar, stats,
+      coins: meta.coins, rating: meta.rating, premium: meta.premium,
+      dailyStreak: meta.dailyStreak, dailyClaimedToday: meta.dailyClaimedToday,
+      selected: meta.selected,
+    });
   });
 
   router.patch('/me', async (req: Request, res: Response) => {
@@ -77,8 +75,21 @@ export function authRoutes(store: Store): Router {
     if (body.data.nickname !== undefined && !isCleanNickname(body.data.nickname)) {
       return res.status(400).json({ error: 'BAD_NICKNAME' });
     }
-    const user = await store.updateProfile(claims.sub, body.data);
-    return res.json({ userId: user.id, nickname: user.nickname, avatar: user.avatar });
+    const user = await store.updateProfile(claims.sub, {
+      nickname: body.data.nickname, avatar: body.data.avatar,
+    });
+    let selected;
+    try {
+      selected = (body.data.selectedCardBack !== undefined || body.data.selectedFelt !== undefined)
+        ? await store.selectCosmetics(claims.sub, {
+            cardBack: body.data.selectedCardBack, felt: body.data.selectedFelt,
+          })
+        : (await store.getMetaProfile(claims.sub)).selected;
+    } catch (e) {
+      if (e instanceof MetaError && e.code === 'NOT_OWNED') return res.status(403).json({ error: 'NOT_OWNED' });
+      throw e;
+    }
+    return res.json({ userId: user.id, nickname: user.nickname, avatar: user.avatar, selected });
   });
 
   router.get('/me/achievements', async (req: Request, res: Response) => {

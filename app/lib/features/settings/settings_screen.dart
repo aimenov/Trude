@@ -12,6 +12,7 @@ import '../../core/strings.dart';
 import '../../core/theme/trude_theme.dart';
 import '../../core/version.dart';
 import '../home/parlor_widgets.dart';
+import '../shop/shop_widgets.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -36,6 +37,76 @@ class SettingsScreen extends ConsumerWidget {
     } catch (e) {
       messenger
           .showSnackBar(SnackBar(content: Text(Strings.saveFailed('$e'))));
+    }
+  }
+
+  Future<void> _restorePurchases(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(billingRestoreProvider)();
+      ref.invalidate(meProvider);
+      messenger.showSnackBar(SnackBar(content: Text(Strings.restoreDone)));
+    } catch (e) {
+      messenger
+          .showSnackBar(SnackBar(content: Text(Strings.saveFailed('$e'))));
+    }
+  }
+
+  /// Double-confirmed account deletion: DELETE /me, then the local identity
+  /// is wiped and the router lands on /nickname (store-policy requirement).
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    Future<bool> confirm(String title, String body) async =>
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(body),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(Strings.cancel),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: TrudeColors.lie,
+                  foregroundColor: TrudeColors.textPrimary,
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(Strings.deleteAccountConfirm),
+              ),
+            ],
+          ),
+        ) ==
+        true;
+
+    if (!await confirm(
+        Strings.deleteAccountTitle, Strings.deleteAccountBody)) {
+      return;
+    }
+    if (!context.mounted) return;
+    if (!await confirm(
+        Strings.deleteAccountSecondTitle, Strings.deleteAccountSecondBody)) {
+      return;
+    }
+
+    try {
+      await ref.read(sessionProvider.notifier).ensure();
+      await ref.read(trudeClientProvider).deleteMe();
+      // Wipe the local identity + session so the router restarts the guest
+      // flow from scratch.
+      final client = ref.read(trudeClientProvider);
+      client.token = null;
+      client.session = null;
+      ref.read(guestIdentityStoreProvider).clear();
+      ref.invalidate(meProvider);
+      ref.invalidate(sessionProvider);
+      ref.invalidate(identityProvider);
+      if (context.mounted) context.go('/nickname');
+    } catch (e) {
+      messenger.showSnackBar(
+          SnackBar(content: Text(Strings.deleteAccountFailed('$e'))));
     }
   }
 
@@ -178,6 +249,33 @@ class SettingsScreen extends ConsumerWidget {
                       style: const TextStyle(
                           fontSize: 12.5, color: TrudeColors.textMuted),
                     ),
+                  ),
+                ),
+                if (ref.watch(billingSupportedProvider)) ...[
+                  const EtchedDivider(),
+                  // Store purchases.
+                  ParlorPanel(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: ListTile(
+                      leading: const Icon(Icons.restore,
+                          color: TrudeColors.brassBright),
+                      title: Text(Strings.restorePurchases, style: _rowTitle),
+                      onTap: () => _restorePurchases(context, ref),
+                    ),
+                  ),
+                ],
+                const EtchedDivider(),
+                // The one destructive row: account deletion (double-confirm).
+                ParlorPanel(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: ListTile(
+                    leading: const Icon(Icons.delete_forever_outlined,
+                        color: TrudeColors.lie),
+                    title: Text(
+                      Strings.deleteAccount,
+                      style: _rowTitle.copyWith(color: TrudeColors.lie),
+                    ),
+                    onTap: () => _deleteAccount(context, ref),
                   ),
                 ),
               ],

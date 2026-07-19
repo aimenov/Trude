@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/audio/sfx_service.dart';
 import '../../core/theme/trude_theme.dart';
 import '../game/widgets/card_widgets.dart';
+import '../game/widgets/cosmetic_styles.dart';
 
 /// The standard meta-screen background: the backdrop gradient with a soft
 /// vignette so edges fall into midnight. Wrap the whole [Scaffold] in this
@@ -320,10 +321,15 @@ class _FlourishPainter extends CustomPainter {
 /// A decorative fanned hand of face-down cards (splash/nickname marquee).
 /// Backs stay anonymous — pure decoration, no shimmer ticker.
 class FannedCardBacks extends StatelessWidget {
-  const FannedCardBacks({super.key, this.cardWidth = 60, this.count = 5});
+  const FannedCardBacks(
+      {super.key, this.cardWidth = 60, this.count = 5, this.style});
 
   final double cardWidth;
   final int count;
+
+  /// Explicit card-back style (shop previews). Null keeps [TrudeCardBack]'s
+  /// own default (the equipped style / classic).
+  final CardBackStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -350,7 +356,77 @@ class FannedCardBacks extends StatelessWidget {
         child: Transform.rotate(
           angle: t * 0.95,
           alignment: Alignment.bottomCenter,
-          child: TrudeCardBack(width: cardWidth),
+          child: TrudeCardBack(width: cardWidth, style: style),
+        ),
+      ),
+    );
+  }
+}
+
+/// A sunken brass progress bar: dark track with a hairline rim, brushed-brass
+/// fill, and an optional small etched label centered on top. Shared by the
+/// quests panel (home) and the reward panel (results).
+///
+/// [progress] is 0..1 (clamped). Pass a non-zero [duration] to animate the
+/// fill from empty to [progress] (callers scale it by the ambient
+/// AnimationSpeed themselves).
+class BrassProgressBar extends StatelessWidget {
+  const BrassProgressBar({
+    super.key,
+    required this.progress,
+    this.label,
+    this.height = 12,
+    this.duration = Duration.zero,
+  });
+
+  final double progress;
+  final String? label;
+  final double height;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = progress.clamp(0.0, 1.0).toDouble();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(height / 2),
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: TrudeColors.surfaceSunken,
+          borderRadius: BorderRadius.circular(height / 2),
+          border: Border.all(color: TrudeColors.hairline),
+        ),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: target),
+          duration: duration,
+          curve: Curves.easeOutCubic,
+          builder: (context, value, _) => Stack(
+            children: [
+              if (value > 0)
+                FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: value,
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(gradient: TrudeGradients.brass),
+                  ),
+                ),
+              if (label != null)
+                Center(
+                  child: Text(
+                    label!,
+                    maxLines: 1,
+                    style: TrudeType.etched.copyWith(
+                      fontSize: height * 0.62,
+                      letterSpacing: 1.0,
+                      color: TrudeColors.textPrimary,
+                      shadows: const [
+                        Shadow(color: TrudeColors.midnight, blurRadius: 2),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

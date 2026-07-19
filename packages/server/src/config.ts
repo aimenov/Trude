@@ -50,4 +50,28 @@ export const config = {
   abandonedAfterMs: 5 * 60_000,
   /** Return to lobby this long after gameOver (ms). */
   rematchLobbyDelayMs: 10_000,
+  /** Coin economy — canonical values, caps env-tunable. */
+  economy: {
+    /** Per-user daily cap on the sum of GAME_AWARD coins. */
+    gameCoinsDailyCap: num('ECONOMY_GAME_COINS_DAILY_CAP', 750),
+    /** Coins for one rewarded ad watched from the shop. */
+    adReward: num('ECONOMY_AD_REWARD', 25),
+    /** Max shop ad rewards per UTC day. */
+    adDailyCap: num('ECONOMY_AD_DAILY_CAP', 5),
+    /** Max "double your winnings" ad rewards per UTC day. */
+    adDoubleDailyCap: num('ECONOMY_AD_DOUBLE_DAILY_CAP', 10),
+    /** Games shorter than this many engine actions award nothing. */
+    minActionsForAwards: num('ECONOMY_MIN_ACTIONS_FOR_AWARDS', 20),
+    /** Rated requires a public game with at least this many players. */
+    minRatedPlayers: num('ECONOMY_MIN_RATED_PLAYERS', 3),
+    /** Coin multiplier for private rooms (never rated, no quests). */
+    privateRoomCoinMultiplier: Number(process.env['ECONOMY_PRIVATE_COIN_MULTIPLIER'] ?? 0.5),
+    /** Rewarded-ad token lifetime (seconds). */
+    adTokenTtlSec: num('ECONOMY_AD_TOKEN_TTL_SEC', 300),
+  },
 } as const;
+
+function num(name: string, fallback: number): number {
+  const v = process.env[name];
+  return v !== undefined && v !== '' ? Number(v) : fallback;
+}

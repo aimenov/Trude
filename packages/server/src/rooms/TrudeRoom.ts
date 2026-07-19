@@ -9,15 +9,17 @@ import {
   clientMessages, REACTION_ALLOWLIST, ROOM_CODE_ALPHABET,
 } from '../protocol.js';
 import type {
-  ClientMessageName, EventBatch, ServerErrorCode, StateFull, WireEvent, WirePlayer,
+  ClientMessageName, EventBatch, RewardsMessage, ServerErrorCode, StateFull, WireEvent, WirePlayer,
 } from '../protocol.js';
-import type { Store, UnlockedAchievement } from '../store/store.js';
+import type { GameAwards, Store } from '../store/store.js';
 import { graceForBatch } from './animationGrace.js';
 
 interface SeatInfo {
   userId: string;
   nickname: string;
   avatar: string;
+  /** Client opted into the `rewards` message at join (old clients never see it). */
+  supportsRewards: boolean;
   connected: boolean;
   /** Epoch ms of the drop; null while connected. */
   disconnectedSince: number | null;
@@ -46,6 +48,8 @@ interface RoomOptions {
   deckSize?: DeckSize;
   turnTimerSec?: 15 | 30 | 60;
   maxPlayers?: number;
+  /** New clients pass true to receive the post-game `rewards` message. */
+  supportsRewards?: boolean;
 }
 
 interface PendingSwap { fromUserId: string; targetUserId: string; expiresAt: number; }
@@ -120,6 +124,7 @@ export class TrudeRoom extends Room {
     if (this.seats.length === 0) this.adminUserId = claims.sub;
     const seat: SeatInfo = {
       userId: claims.sub, nickname: claims.nick, avatar: claims.avatar,
+      supportsRewards: options.supportsRewards === true,
       connected: true, disconnectedSince: null, autoPilot: false, consecutiveTimeouts: 0,
       lastClientSeq: -1, lastReactionAt: 0, client,
     };
@@ -552,11 +557,13 @@ export class TrudeRoom extends Room {
   private async finishGame(e: Extract<EngineEvent, { type: 'gameOver' }>): Promise<void> {
     this.phase = 'finished';
     const game = this.game!;
-    let unlocked = new Map<string, UnlockedAchievement[]>();
+    let awards = new Map<string, GameAwards>();
     try {
-      unlocked = await store.recordGameResult({
+      awards = await store.recordGameResult({
         roomId: this.roomId, deckSize: this.deckSize, status: 'FINISHED',
         loserUserId: this.seats[e.loserSeat]!.userId,
+        isPrivate: !this.isPublic,
+        actionCount: game.actionCount,
         participants: e.placements.map((p) => ({
           userId: p.playerId, placement: p.placement, stats: game.players[p.seat]!.stats,
         })),
@@ -564,9 +571,14 @@ export class TrudeRoom extends Room {
     } catch (err) {
       console.error('Failed to persist game result', err);
     }
-    for (const [userId, achievements] of unlocked) {
+    for (const [userId, userAwards] of awards) {
       const seat = this.seats.find((s) => s.userId === userId);
-      for (const a of achievements) seat?.client?.send('achievementUnlocked', a);
+      for (const a of userAwards.achievements) seat?.client?.send('achievementUnlocked', a);
+    }
+    // Post-game economy summary — only to seats that opted in at join.
+    for (const [userId, userAwards] of awards) {
+      const seat = this.seats.find((s) => s.userId === userId);
+      if (seat?.supportsRewards) seat.client?.send('rewards', userAwards satisfies RewardsMessage);
     }
 
     this.clock.setTimeout(() => this.returnToLobby(), config.rematchLobbyDelayMs);

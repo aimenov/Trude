@@ -73,6 +73,69 @@ void main() {
         'Подсунь джокера 10 раз');
   });
 
+  testWidgets('RU locale renders the parlor-economy strings', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(builder: (context) {
+        Strings.use(AppLocalizations.of(context));
+        return SingleChildScrollView(
+            child: Column(children: [
+          Text(Strings.shopTitle),
+          Text(Strings.leaderboardTitle),
+          Text(Strings.dailyBonusTitle),
+          Text(Strings.questsTitle),
+          Text(Strings.premiumTitle),
+          Text(Strings.shopBillingUnavailable),
+          Text(Strings.shopInsufficientFunds),
+          Text(Strings.doubledLabel),
+          Text(Strings.doubleWinnings),
+          Text(Strings.tierName('novice')),
+          Text(Strings.tierName('legend')),
+          Text(Strings.questTitle('q_play_3')),
+          Text(Strings.questDescription('q_catch_3')),
+          Text(Strings.cosmeticName('cb_noir')),
+          Text(Strings.dailyBonusClaim(20)),
+          Text(Strings.shopBuyConfirmBody('Нуар', 300)),
+          Text(Strings.gamesRatedLabel(3)),
+          Text(Strings.deleteAccountTitle),
+        ]));
+      }),
+    ));
+
+    // Screen titles in the parlor voice.
+    expect(find.text('Лавка'), findsOneWidget);
+    expect(find.text('Табель почёта'), findsOneWidget);
+    expect(find.text('Заведение ценит завсегдатаев'), findsOneWidget);
+    expect(find.text('Поручения на вечер'), findsOneWidget);
+    expect(find.text('Покровитель салона'), findsOneWidget);
+
+    // Shop shelf copy.
+    expect(find.text('Эта полка открыта в мобильном салоне'), findsOneWidget);
+    expect(find.text('В кошеле не хватает монет'), findsOneWidget);
+    expect(find.text('Удвоено'), findsOneWidget);
+    expect(find.text('Удвоить выигрыш'), findsOneWidget);
+
+    // Tier names by ICU key.
+    expect(find.text('Новичок'), findsOneWidget);
+    expect(find.text('Легенда салона'), findsOneWidget);
+
+    // Quest ICU keys.
+    expect(find.text('Завсегдатай'), findsOneWidget);
+    expect(find.text('Поймай трёх лжецов'), findsOneWidget);
+
+    // Cosmetic names + coin plurals.
+    expect(find.text('Нуар'), findsOneWidget);
+    expect(find.text('Забрать 20'), findsOneWidget);
+    expect(find.text('Купить «Нуар» за 300 монет?'), findsOneWidget);
+
+    // Russian plural agreement for rated games (paucal).
+    expect(find.text('3 рейтинговые партии'), findsOneWidget);
+
+    expect(find.text('Удалить аккаунт?'), findsOneWidget);
+  });
+
   testWidgets('EN locale keeps the original callouts', (tester) async {
     await tester.pumpWidget(MaterialApp(
       locale: const Locale('en'),

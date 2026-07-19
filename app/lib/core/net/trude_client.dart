@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 
 import 'colyseus_lite/matchmake.dart';
 import 'colyseus_lite/room_connection.dart';
+import 'economy_models.dart';
 import 'meta_models.dart';
 import 'protocol_models.dart';
 
 export 'colyseus_lite/matchmake.dart' show MatchmakeException;
 export 'colyseus_lite/room_connection.dart' show RoomMessage, RoomProtocolError;
+export 'economy_models.dart';
 export 'meta_models.dart';
 export 'protocol_models.dart';
 
@@ -19,6 +22,17 @@ class TrudeApiException implements Exception {
 
   final int statusCode;
   final String body;
+
+  /// The server's `{error: CODE}` payload (e.g. `INSUFFICIENT_FUNDS` on a
+  /// 402 from POST /shop/buy), or null when the body is not shaped that way.
+  String? get errorCode {
+    try {
+      final decoded = jsonDecode(body);
+      return decoded is Map ? decoded['error'] as String? : null;
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   String toString() => 'TrudeApiException($statusCode): $body';
@@ -80,14 +94,95 @@ class TrudeClient {
   Future<MeAchievements> getAchievements() async =>
       MeAchievements.fromJson(await _get('/me/achievements'));
 
-  /// `PATCH /me` — rename / re-avatar (profanity-checked server-side).
-  Future<MeProfile> patchMe({String? nickname, String? avatar}) async {
+  /// `PATCH /me` — rename / re-avatar (profanity-checked server-side) and/or
+  /// equip owned cosmetics (403 NOT_OWNED when not owned).
+  Future<MeProfile> patchMe({
+    String? nickname,
+    String? avatar,
+    String? selectedCardBack,
+    String? selectedFelt,
+  }) async {
     final res = await _http.patch(
       baseUri.resolve('/me'),
       headers: _authHeaders,
-      body: jsonEncode({'nickname': ?nickname, 'avatar': ?avatar}),
+      body: jsonEncode({
+        'nickname': ?nickname,
+        'avatar': ?avatar,
+        'selectedCardBack': ?selectedCardBack,
+        'selectedFelt': ?selectedFelt,
+      }),
     );
     return MeProfile.fromJson(_decode(res));
+  }
+
+  // -- Economy endpoints -----------------------------------------------------
+
+  /// `GET /leaderboard?scope=weekly|alltime&limit=` (Bearer).
+  Future<LeaderboardPage> getLeaderboard(LeaderboardScope scope,
+          {int limit = 50}) async =>
+      LeaderboardPage.fromJson(
+          await _get('/leaderboard?scope=${scope.name}&limit=$limit'));
+
+  /// `GET /me/quests` — today's three quests + progress (Bearer).
+  Future<DailyQuests> getQuests() async =>
+      DailyQuests.fromJson(await _get('/me/quests'));
+
+  /// `POST /me/daily/claim` — idempotent daily bonus claim (Bearer).
+  Future<DailyClaimResult> claimDaily() async =>
+      DailyClaimResult.fromJson(await _postAuth('/me/daily/claim', const {}));
+
+  /// `GET /catalog/cosmetics` — public, no auth required.
+  Future<CosmeticsCatalog> getCosmeticsCatalog() async {
+    final res = await _http.get(baseUri.resolve('/catalog/cosmetics'),
+        headers: const {'Accept': 'application/json'});
+    return CosmeticsCatalog.fromJson(_decode(res));
+  }
+
+  /// `GET /me/cosmetics` — owned keys + current selection (Bearer).
+  Future<OwnedCosmetics> getMyCosmetics() async =>
+      OwnedCosmetics.fromJson(await _get('/me/cosmetics'));
+
+  /// `POST /shop/buy` (Bearer). Failures surface as [TrudeApiException]:
+  /// 402 INSUFFICIENT_FUNDS, 404 UNKNOWN_ITEM, 409 ALREADY_OWNED,
+  /// 403 PREMIUM_REQUIRED — check `statusCode` / `errorCode`.
+  Future<ShopPurchaseResult> buyCosmetic(String itemKey) async =>
+      ShopPurchaseResult.fromJson(
+          await _postAuth('/shop/buy', {'itemKey': itemKey}));
+
+  /// `GET /ads/token?kind=shop|double&gameId=` (Bearer). [kind] is the wire
+  /// string `'shop'` or `'double'`; [gameId] is required for `'double'`.
+  Future<AdTokenGrant> getAdsToken(String kind, {String? gameId}) async {
+    final query = gameId == null
+        ? 'kind=$kind'
+        : 'kind=$kind&gameId=${Uri.encodeQueryComponent(gameId)}';
+    return AdTokenGrant.fromJson(await _get('/ads/token?$query'));
+  }
+
+  /// `POST /ads/reward {token}` (Bearer). Failures: 401 BAD_TOKEN,
+  /// 409 TOKEN_USED, 429 DAILY_CAP.
+  Future<AdRewardResult> postAdReward(String token) async =>
+      AdRewardResult.fromJson(await _postAuth('/ads/reward', {'token': token}));
+
+  /// `POST /iap/google {purchaseToken, productId}` (Bearer).
+  Future<IapResult> postIapGoogle({
+    required String purchaseToken,
+    required String productId,
+  }) async =>
+      IapResult.fromJson(await _postAuth('/iap/google', {
+        'purchaseToken': purchaseToken,
+        'productId': productId,
+      }));
+
+  /// `POST /iap/apple {receipt}` (Bearer).
+  Future<IapResult> postIapApple({required String receipt}) async =>
+      IapResult.fromJson(await _postAuth('/iap/apple', {'receipt': receipt}));
+
+  /// `DELETE /me` — deletes the account and all its rows; 204 on success.
+  Future<void> deleteMe() async {
+    final res = await _delete('/me');
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw TrudeApiException(res.statusCode, res.body);
+    }
   }
 
   /// Creates a `trude` room and joins it (the creator becomes admin).
@@ -137,7 +232,9 @@ class TrudeClient {
     if (t == null) {
       throw StateError('Call guestLogin() before joining rooms');
     }
-    return {'token': t, ...extra};
+    // supportsRewards opts this client into the per-seat 'rewards' message
+    // sent after gameOver (old clients never receive it).
+    return {'token': t, 'supportsRewards': true, ...extra};
   }
 
   Future<TrudeRoom> _consume(SeatReservation reservation) async {
@@ -156,11 +253,20 @@ class TrudeClient {
   Future<Map<String, dynamic>> _get(String path) async =>
       _decode(await _http.get(baseUri.resolve(path), headers: _authHeaders));
 
+  /// Unauthenticated POST — only /auth/guest; every other POST needs Bearer.
   Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
     final res = await _http.post(baseUri.resolve(path),
         headers: _jsonHeaders, body: jsonEncode(body));
     return _decode(res);
   }
+
+  Future<Map<String, dynamic>> _postAuth(
+          String path, Map<String, dynamic> body) async =>
+      _decode(await _http.post(baseUri.resolve(path),
+          headers: _authHeaders, body: jsonEncode(body)));
+
+  Future<http.Response> _delete(String path) =>
+      _http.delete(baseUri.resolve(path), headers: _authHeaders);
 
   Map<String, dynamic> _decode(http.Response res) {
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -181,6 +287,11 @@ class TrudeRoom {
     _sub = _conn.messages.listen(_onMessage);
   }
 
+  /// Builds a room over a fake [RoomConnection] so provider tests can push
+  /// synthetic messages without a live server.
+  @visibleForTesting
+  TrudeRoom.forTest(RoomConnection connection) : this._(connection);
+
   final RoomConnection _conn;
   late final StreamSubscription<RoomMessage> _sub;
 
@@ -192,6 +303,7 @@ class TrudeRoom {
   final _reactions = StreamController<ReactionMessage>.broadcast();
   final _swapRequests = StreamController<SeatSwapRequest>.broadcast();
   final _achievements = StreamController<AchievementUnlocked>.broadcast();
+  final _rewards = StreamController<RewardsMessage>.broadcast();
   final _firstState = Completer<StateFull>();
 
   /// Last event-batch/state actionCount seen; stamped onto outgoing actions.
@@ -215,6 +327,10 @@ class TrudeRoom {
   Stream<ReactionMessage> get onReaction => _reactions.stream;
   Stream<SeatSwapRequest> get onSeatSwapRequested => _swapRequests.stream;
   Stream<AchievementUnlocked> get onAchievement => _achievements.stream;
+
+  /// Per-seat post-game economy awards; sent only because this client joins
+  /// with `supportsRewards: true`.
+  Stream<RewardsMessage> get onRewards => _rewards.stream;
 
   /// Raw decoded messages (all types), for anything not covered above.
   Stream<RoomMessage> get messages => _conn.messages;
@@ -257,6 +373,8 @@ class TrudeRoom {
         _swapRequests.add(SeatSwapRequest.fromJson(data));
       case 'achievementUnlocked':
         _achievements.add(AchievementUnlocked.fromJson(data));
+      case 'rewards':
+        _rewards.add(RewardsMessage.fromJson(data));
       default:
         break; // unknown message types are still visible on [messages]
     }

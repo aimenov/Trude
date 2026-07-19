@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Google Play Billing (in_app_purchase). -->
+    <uses-permission android:name="com.android.vending.BILLING"/>
     <application
         android:label="trude"
         android:name="${applicationName}"
@@ -25,6 +27,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- AdMob app id — this is Google's public TEST app id, matching
+             lib/core/ads/ad_config.dart.
+             TODO(release): replace with the real AdMob Android app id before
+             any store build (a wrong/missing id crashes the app at start
+             once the ads SDK initializes). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -21,6 +21,7 @@ import 'package:trude/core/storage/guest_identity_store.dart';
 import 'package:trude/core/storage/identity_providers.dart';
 import 'package:trude/core/theme/trude_theme.dart';
 import 'package:trude/features/game/widgets/card_widgets.dart';
+import 'package:trude/features/game/widgets/cosmetic_styles.dart';
 import 'package:trude/features/game/widgets/my_hand.dart';
 import 'package:trude/features/game/widgets/pile_stack.dart';
 import 'package:trude/features/nickname/nickname_screen.dart';
@@ -40,18 +41,52 @@ Future<void> _loadFonts() async {
 
 /// Felt-table stage: the gallery content over the same radial candlelight
 /// gradient the real table uses, so ivory cards are judged against felt.
+///
+/// The ProviderScope pins the equipped card back to classic so the frozen
+/// goldens never depend on the (network-backed) selected-cosmetics provider.
 Widget _stage(Widget child) {
-  return MaterialApp(
-    debugShowCheckedModeBanner: false,
-    theme: buildTrudeTheme(),
-    home: RepaintBoundary(
-      key: const ValueKey('stage'),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(gradient: TrudeGradients.feltLight),
-        child: Center(child: child),
+  return ProviderScope(
+    overrides: [
+      selectedCardBackStyleProvider.overrideWithValue(CardBackStyle.classic),
+    ],
+    child: MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: buildTrudeTheme(),
+      home: RepaintBoundary(
+        key: const ValueKey('stage'),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(gradient: TrudeGradients.feltLight),
+          child: Center(child: child),
+        ),
       ),
     ),
   );
+}
+
+/// A felt cosmetic swatch: the same three-stop radial pool the table paints,
+/// framed like a shop tile.
+class _FeltSwatch extends StatelessWidget {
+  const _FeltSwatch({required this.style});
+
+  final FeltStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 84,
+      height: 56,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: TrudeColors.hairline),
+        gradient: RadialGradient(
+          radius: 1.1,
+          colors: [style.lit, style.base, style.deep],
+          stops: const [0.0, 0.55, 1.0],
+        ),
+      ),
+    );
+  }
 }
 
 Finder get _stageFinder => find.byKey(const ValueKey('stage'));
@@ -183,6 +218,46 @@ void main() {
         _stageFinder, matchesGoldenFile('goldens/pile_laid_row.png'));
   });
 
+  testWidgets('cosmetics gallery: styled cb_royal back + felt swatch row',
+      (tester) async {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(560, 340);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_stage(
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Explicit styles (the shop-preview path): no provider involved.
+          Wrap(
+            spacing: 18,
+            alignment: WrapAlignment.center,
+            children: [
+              TrudeCardBack(width: 90, style: cardBackStyleFor('cb_royal')),
+              TrudeCardBack(width: 90, style: cardBackStyleFor('cb_noir')),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final id in const [
+                'felt_classic',
+                'felt_burgundy',
+                'felt_navy',
+                'felt_midnight',
+              ])
+                _FeltSwatch(style: feltStyleFor(id)),
+            ],
+          ),
+        ],
+      ),
+    ));
+    await tester.pump();
+    await expectLater(
+        _stageFinder, matchesGoldenFile('goldens/cosmetics_gallery.png'));
+  });
+
   testWidgets('nickname screen scaffold', (tester) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = const Size(390, 780);
@@ -191,6 +266,9 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         guestIdentityStoreProvider.overrideWithValue(_FakeStore()),
+        // Pin the fanned backs to classic — the golden must not depend on
+        // the network-backed selected-cosmetics provider.
+        selectedCardBackStyleProvider.overrideWithValue(CardBackStyle.classic),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

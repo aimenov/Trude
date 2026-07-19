@@ -1,10 +1,13 @@
-/// Achievement unlock toast: listens to the room's `achievementUnlocked`
-/// messages and shows a top-center sliding badge with a shine sweep.
+/// Parlor toasts: a top-center sliding brass plaque with a shine sweep,
+/// shared by achievement unlocks and rating rank-ups.
 ///
-/// Never interrupts a running set piece: while the AnimationQueue is busy
-/// ([animationBusyProvider]) unlocks queue up and surface only once the
-/// queue drains. Unlocks are also accumulated per game for the results
-/// screen ([unlockedThisGameProvider]).
+/// [parlorToastProvider] owns the queue: achievement unlocks stream in from
+/// the room's `achievementUnlocked` messages, rank-up toasts fire when a
+/// rewards message crosses a rating-tier threshold, and anything else can
+/// [ParlorToastController.show] one. Never interrupts a running set piece:
+/// while the AnimationQueue is busy ([animationBusyProvider]) toasts queue up
+/// and surface only once the queue drains. Unlocks are also accumulated per
+/// game for the results screen ([unlockedThisGameProvider]).
 library;
 
 import 'dart:async';
@@ -16,7 +19,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/net/connection_providers.dart';
 import '../../core/strings.dart';
 import '../../core/theme/trude_theme.dart';
+import '../economy/rewards_providers.dart';
 import '../game/anim/rendered_state.dart';
+import '../leaderboard/rating_tiers.dart';
 import 'achievement_art.dart';
 
 /// Unlocks received since the current game started; cleared on gameStarted.
@@ -45,21 +50,35 @@ class UnlockedThisGameController extends Notifier<List<AchievementUnlocked>> {
   }
 }
 
-/// The toast currently on screen (null = hidden). New unlocks queue behind
-/// the animation queue and each other.
-final achievementToastProvider =
-    NotifierProvider<AchievementToastController, AchievementUnlocked?>(
-        AchievementToastController.new);
+/// One toast's content: emoji medallion, small etched overline, serif title.
+@immutable
+class ParlorToast {
+  const ParlorToast({
+    required this.emoji,
+    required this.overline,
+    required this.title,
+  });
 
-class AchievementToastController extends Notifier<AchievementUnlocked?> {
-  final Queue<AchievementUnlocked> _pending = Queue();
+  final String emoji;
+  final String overline;
+  final String title;
+}
+
+/// The toast currently on screen (null = hidden). New toasts queue behind
+/// the animation queue and each other.
+final parlorToastProvider =
+    NotifierProvider<ParlorToastController, ParlorToast?>(
+        ParlorToastController.new);
+
+class ParlorToastController extends Notifier<ParlorToast?> {
+  final Queue<ParlorToast> _pending = Queue();
   Timer? _holdTimer;
 
   /// Slide-in + shine + hold + slide-out budget for one toast.
   static const displayDuration = Duration(milliseconds: 3100);
 
   @override
-  AchievementUnlocked? build() {
+  ParlorToast? build() {
     final room = ref.watch(currentRoomProvider);
     // When the set-piece queue drains, surface anything that was deferred.
     ref.listen(animationBusyProvider, (_, busy) {
@@ -67,16 +86,44 @@ class AchievementToastController extends Notifier<AchievementUnlocked?> {
     });
     if (room != null) {
       final sub = room.onAchievement.listen((a) {
-        _pending.add(a);
-        _pump();
+        show(ParlorToast(
+          emoji: achievementEmoji(a.key),
+          overline: Strings.achievementUnlockedToast,
+          title: Strings.achievementTitle(a.key, a.title),
+        ));
       });
       ref.onDispose(sub.cancel);
     }
+    // Rank-up: fires once when the game's rewards land with a rating that
+    // crossed a tier threshold upward.
+    ref.listen(rewardsThisGameProvider, (prev, next) {
+      if (next == null || identical(prev, next)) return;
+      // Loosely typed on purpose — only field names couple to the message
+      // model, and null-safety holds whether the model uses int or int?.
+      final dynamic msg = next;
+      if (msg.rated != true) return;
+      final int? newRating = msg.newRating as int?;
+      final int delta = (msg.ratingDelta as int?) ?? 0;
+      if (newRating == null || delta <= 0) return;
+      if (tierIndexFor(newRating) <= tierIndexFor(newRating - delta)) return;
+      show(ParlorToast(
+        emoji: '\u{1F3A9}', // 🎩
+        overline: Strings.rankUpToast,
+        title: Strings.tierName(tierFor(newRating).key),
+      ));
+    });
     ref.onDispose(() {
       _holdTimer?.cancel();
       _holdTimer = null;
     });
     return null;
+  }
+
+  /// Queues [toast]; it surfaces as soon as no set piece is playing and no
+  /// earlier toast is on screen.
+  void show(ParlorToast toast) {
+    _pending.add(toast);
+    _pump();
   }
 
   void _pump() {
@@ -100,7 +147,7 @@ class AchievementToastHost extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final toast = ref.watch(achievementToastProvider);
+    final toast = ref.watch(parlorToastProvider);
     return Stack(
       children: [
         child,
@@ -120,7 +167,7 @@ class AchievementToastHost extends ConsumerWidget {
               ),
               child: toast == null
                   ? const SizedBox.shrink()
-                  : _ToastCard(key: ValueKey(toast.key), toast: toast),
+                  : BrassToastCard(key: ObjectKey(toast), toast: toast),
             ),
           ),
         ),
@@ -129,16 +176,18 @@ class AchievementToastHost extends ConsumerWidget {
   }
 }
 
-class _ToastCard extends StatefulWidget {
-  const _ToastCard({super.key, required this.toast});
+/// A sliding brass plaque: brushed gradient, ivory emoji medallion, engraved
+/// serif title, one shine sweep after it lands.
+class BrassToastCard extends StatefulWidget {
+  const BrassToastCard({super.key, required this.toast});
 
-  final AchievementUnlocked toast;
+  final ParlorToast toast;
 
   @override
-  State<_ToastCard> createState() => _ToastCardState();
+  State<BrassToastCard> createState() => _BrassToastCardState();
 }
 
-class _ToastCardState extends State<_ToastCard>
+class _BrassToastCardState extends State<BrassToastCard>
     with SingleTickerProviderStateMixin {
   // One shine sweep across the badge shortly after it lands.
   late final AnimationController _shine = AnimationController(
@@ -154,8 +203,6 @@ class _ToastCardState extends State<_ToastCard>
 
   @override
   Widget build(BuildContext context) {
-    // A sliding brass plaque: brushed gradient, engraved serif title, one
-    // shine sweep after it lands.
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Material(
@@ -210,7 +257,7 @@ class _ToastCardState extends State<_ToastCard>
                       border: Border.all(color: TrudeColors.brassDark),
                     ),
                     child: Center(
-                      child: Text(achievementEmoji(widget.toast.key),
+                      child: Text(widget.toast.emoji,
                           style: const TextStyle(fontSize: 21)),
                     ),
                   ),
@@ -221,7 +268,7 @@ class _ToastCardState extends State<_ToastCard>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          Strings.achievementUnlockedToast.toUpperCase(),
+                          widget.toast.overline.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TrudeType.etched.copyWith(
@@ -233,8 +280,7 @@ class _ToastCardState extends State<_ToastCard>
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          Strings.achievementTitle(
-                              widget.toast.key, widget.toast.title),
+                          widget.toast.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TrudeType.display.copyWith(

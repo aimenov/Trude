@@ -2,17 +2,26 @@
 // rendering when no callback is wired, and messy/row render-cap accounting.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trude/core/motion/animation_speed.dart';
 import 'package:trude/core/theme/trude_theme.dart';
 import 'package:trude/features/game/anim/motion_spec.dart';
 import 'package:trude/features/game/widgets/card_widgets.dart';
+import 'package:trude/features/game/widgets/cosmetic_styles.dart';
 import 'package:trude/features/game/widgets/pile_stack.dart';
 
-Widget _stage(Widget child) => MaterialApp(
-      theme: buildTrudeTheme(),
-      home: Scaffold(body: Center(child: child)),
+// Card backs resolve their cosmetic style from a provider now; pin classic so
+// the test stays hermetic (no economy net layer).
+Widget _stage(Widget child) => ProviderScope(
+      overrides: [
+        selectedCardBackStyleProvider.overrideWithValue(CardBackStyle.classic),
+      ],
+      child: MaterialApp(
+        theme: buildTrudeTheme(),
+        home: Scaffold(body: Center(child: child)),
+      ),
     );
 
 void main() {
