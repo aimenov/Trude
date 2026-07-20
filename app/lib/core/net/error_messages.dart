@@ -25,8 +25,21 @@ String friendlyRoomError(Object e, {required bool creating}) {
     return e.statusCode == 404 ? Strings.roomNotFound : generic;
   }
 
+  // The server's onJoin block-list guard throws 'BLOCKED' (a block exists in
+  // either direction between the joiner and a seated player). The matchmake
+  // HTTP reservation SUCCEEDS in that case — the rejection arrives at the
+  // WebSocket join stage as a transport ERROR frame (code 4216,
+  // APPLICATION_ERROR), i.e. a [RoomProtocolError], not a MatchmakeException.
+  if (e is RoomProtocolError && e.message.contains('BLOCKED')) {
+    return Strings.joinBlocked;
+  }
+
   if (e is MatchmakeException) {
     final message = e.message.toLowerCase();
+    // The server's onJoin block-list guard throws 'BLOCKED' (a block exists
+    // in either direction between the joiner and a seated player). MUST be
+    // checked before the locked/full branch: 'blocked' contains 'locked'.
+    if (message.contains('blocked')) return Strings.joinBlocked;
     // Full rooms lock themselves (Colyseus autoLock at maxClients); the
     // server's own onJoin guard says "Room is full".
     if (message.contains('locked') || message.contains('full')) {

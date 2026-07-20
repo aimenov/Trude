@@ -13,6 +13,7 @@ import type {
 } from '../protocol.js';
 import type { GameAwards, Store } from '../store/store.js';
 import { graceForBatch } from './animationGrace.js';
+import { rerankPlacements } from './rerank.js';
 
 interface SeatInfo {
   userId: string;
@@ -28,6 +29,10 @@ interface SeatInfo {
   lastClientSeq: number;
   lastReactionAt: number;
   client: Client | null;
+  /** Consented mid-game quit before going out — penalized at game over. */
+  leftConsented: boolean;
+  /** 1-based order of consented mid-game leaves (earlier = worse final placement); 0 = never left. */
+  leftOrder: number;
 }
 
 /** The currently armed turn timer, as broadcast to clients. */
@@ -76,6 +81,8 @@ export class TrudeRoom extends Room {
   private shorteningNonce = 0;
   private turnArm: TurnArm | null = null;
   private allDisconnectedSince: number | null = null;
+  /** Counts consented mid-game leaves this game (feeds SeatInfo.leftOrder). */
+  private leaveCounter = 0;
 
   override async onCreate(options: RoomOptions): Promise<void> {
     this.displayName = (options.name ?? 'Trude room').slice(0, 40);
@@ -118,6 +125,12 @@ export class TrudeRoom extends Room {
 
     const existing = this.seats.find((s) => s.userId === claims.sub);
     if (existing) throw new Error('Already in this room');
+    // Join-time block enforcement (either direction). Surfaces to the client
+    // as a transport ERROR frame: code 4216 (APPLICATION_ERROR), message 'BLOCKED'.
+    if (this.seats.length > 0
+      && await store.hasBlockBetween(claims.sub, this.seats.map((s) => s.userId))) {
+      throw new Error('BLOCKED');
+    }
     if (this.phase !== 'lobby') throw new Error('GAME_IN_PROGRESS');
     if (this.seats.length >= this.maxPlayersCfg) throw new Error('Room is full');
 
@@ -127,6 +140,7 @@ export class TrudeRoom extends Room {
       supportsRewards: options.supportsRewards === true,
       connected: true, disconnectedSince: null, autoPilot: false, consecutiveTimeouts: 0,
       lastClientSeq: -1, lastReactionAt: 0, client,
+      leftConsented: false, leftOrder: 0,
     };
     this.seats.push(seat);
     client.userData = { userId: claims.sub };
@@ -150,6 +164,13 @@ export class TrudeRoom extends Room {
       if (this.phase === 'playing') {
         // Quitting mid-game: the seat stays (cards are never redistributed) on
         // permanent autopilot; the shortened timer keeps the game moving.
+        // A player who has NOT yet gone out forfeits their standing: they are
+        // re-ranked below everyone who stayed (see rerank.ts) and earn nothing.
+        // A player who already went out safe keeps their earned placement.
+        if (!this.game?.players[seatIdx]?.out && !seat.leftConsented) {
+          seat.leftConsented = true;
+          seat.leftOrder = ++this.leaveCounter;
+        }
         seat.connected = false;
         seat.disconnectedSince = Date.now();
         seat.client = null;
@@ -296,8 +317,11 @@ export class TrudeRoom extends Room {
     this.game = state;
     this.phase = 'playing';
     this.lastResolution = null;
+    this.leaveCounter = 0;
     for (const s of this.seats) {
       s.consecutiveTimeouts = 0;
+      s.leftConsented = false;
+      s.leftOrder = 0;
       // A stale disconnected flag must never leak a shortened first turn into a
       // fresh game: anyone with a live client is connected by definition.
       if (s.client) {
@@ -427,10 +451,14 @@ export class TrudeRoom extends Room {
         }
         case 'gameOver': {
           this.cancelTimer();
+          const adjusted = rerankPlacements(e.placements, this.leaverSeats());
           wire.push({
             type: 'gameOver', loserSeat: e.loserSeat,
             loserUserId: this.seats[e.loserSeat]!.userId, jokerCard: e.jokerCard,
-            placements: e.placements.map((p) => ({ userId: p.playerId, seat: p.seat, placement: p.placement })),
+            placements: adjusted.map((p) => ({
+              userId: p.playerId, seat: p.seat, placement: p.placement,
+              ...(p.left ? { left: true } : {}),
+            })),
             stats: e.stats,
           });
           void this.finishGame(e);
@@ -557,6 +585,10 @@ export class TrudeRoom extends Room {
   private async finishGame(e: Extract<EngineEvent, { type: 'gameOver' }>): Promise<void> {
     this.phase = 'finished';
     const game = this.game!;
+    // Same leaver re-rank as the wire placements: leavers score last and are
+    // flagged so the store denies them coins/quests (rating uses the adjusted
+    // last placement — leaving is never better than losing).
+    const adjusted = rerankPlacements(e.placements, this.leaverSeats());
     let awards = new Map<string, GameAwards>();
     try {
       awards = await store.recordGameResult({
@@ -564,8 +596,9 @@ export class TrudeRoom extends Room {
         loserUserId: this.seats[e.loserSeat]!.userId,
         isPrivate: !this.isPublic,
         actionCount: game.actionCount,
-        participants: e.placements.map((p) => ({
+        participants: adjusted.map((p) => ({
           userId: p.playerId, placement: p.placement, stats: game.players[p.seat]!.stats,
+          ...(p.left ? { leaver: true } : {}),
         })),
       });
     } catch (err) {
@@ -655,6 +688,15 @@ export class TrudeRoom extends Room {
   /** Seat indexes shift in lobby operations — cheapest correct move is a full resync. */
   private syncLobby(): void {
     for (const s of this.seats) s.client?.send('stateFull', this.buildStateFull(s.userId));
+  }
+
+  /** Seats that consented-left mid-game before going out, as seat → leave order. */
+  private leaverSeats(): Map<number, number> {
+    const m = new Map<number, number>();
+    this.seats.forEach((s, i) => {
+      if (s.leftConsented) m.set(i, s.leftOrder);
+    });
+    return m;
   }
 
   private seatOf(client: Client): number {

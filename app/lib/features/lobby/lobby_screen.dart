@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/net/connection_providers.dart' hide Card;
+import '../../core/net/moderation_providers.dart';
 import '../../core/strings.dart';
 import '../../core/theme/trude_theme.dart';
 import '../game/widgets/card_widgets.dart';
 import '../home/parlor_widgets.dart';
+import '../moderation/player_actions_sheet.dart';
 
 const _deckCap = {37: 6, 53: 8};
 
@@ -65,25 +67,24 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     if (mounted) context.go('/home');
   }
 
+  /// Tap on a lobby seat → the player actions sheet, with the seat-swap flow
+  /// moved into it and an admin-only kick row (the server enforces both
+  /// lobby-only and admin-only on kickPlayer).
   Future<void> _tapPlayer(PlayerView player, ClientGameState state) async {
     if (player.userId == state.me?.userId) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        content: Text(Strings.swapAsk(player.nickname)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(Strings.cancel)),
-          FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(Strings.requestSwap)),
-        ],
+    await showPlayerActionsSheet(
+      context,
+      ref,
+      userId: player.userId,
+      nickname: player.nickname,
+      extras: PlayerActionsExtras(
+        onRequestSwap: () =>
+            ref.read(currentRoomProvider)?.requestSeatSwap(player.userId),
+        onKick: state.iAmAdmin
+            ? () => ref.read(currentRoomProvider)?.kickPlayer(player.userId)
+            : null,
       ),
     );
-    if (confirmed == true) {
-      ref.read(currentRoomProvider)?.requestSeatSwap(player.userId);
-    }
   }
 
   void _respondSwap(bool accept) {
@@ -102,8 +103,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
     final state = ref.watch(gameStateProvider);
     final room = ref.watch(currentRoomProvider);
+    final blocked = ref.watch(blockedIdsProvider);
     final isAdmin = state.iAmAdmin;
     final swap = _incomingSwap;
+    final swapFrom =
+        swap == null ? null : state.playerAtSeat(swap.fromSeat);
 
     return ParlorBackdrop(
       child: Scaffold(
@@ -144,9 +148,10 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            Strings.swapIncoming(
-                                state.playerAtSeat(swap.fromSeat)?.nickname ??
-                                    Strings.seatName(swap.fromSeat)),
+                            Strings.swapIncoming(swapFrom == null
+                                ? Strings.seatName(swap.fromSeat)
+                                : maskedNickname(blocked, swapFrom.userId,
+                                    swapFrom.nickname)),
                             style: const TextStyle(
                                 color: TrudeColors.textPrimary),
                           ),
@@ -170,6 +175,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 const SizedBox(height: 10),
                 _TablePreview(
                   state: state,
+                  blocked: blocked,
                   onTapPlayer: (p) => _tapPlayer(p, state),
                 ),
                 const SizedBox(height: 10),
@@ -382,9 +388,14 @@ class _RoomCodePlateState extends State<_RoomCodePlate> {
 /// rail, with the seats arranged around it (mine at the bottom). Empty seats
 /// render as hollow placeholders up to the room's max.
 class _TablePreview extends StatelessWidget {
-  const _TablePreview({required this.state, required this.onTapPlayer});
+  const _TablePreview({
+    required this.state,
+    required this.blocked,
+    required this.onTapPlayer,
+  });
 
   final ClientGameState state;
+  final Set<String> blocked;
   final void Function(PlayerView) onTapPlayer;
 
   static const _nodeW = 74.0;
@@ -467,6 +478,7 @@ class _TablePreview extends StatelessWidget {
           ? const _EmptySeat()
           : _SeatNode(
               player: player,
+              blocked: blocked,
               isMe: player.userId == state.me?.userId,
               onTap: () => onTapPlayer(player),
             ),
@@ -475,16 +487,21 @@ class _TablePreview extends StatelessWidget {
 }
 
 class _SeatNode extends StatelessWidget {
-  const _SeatNode({required this.player, required this.isMe, this.onTap});
+  const _SeatNode({
+    required this.player,
+    required this.blocked,
+    required this.isMe,
+    this.onTap,
+  });
 
   final PlayerView player;
+  final Set<String> blocked;
   final bool isMe;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final initial =
-        player.nickname.isEmpty ? '?' : player.nickname[0].toUpperCase();
+    final initial = maskedInitial(blocked, player.userId, player.nickname);
     return PressableScale(
       onTap: onTap,
       child: Column(
@@ -559,7 +576,7 @@ class _SeatNode extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            player.nickname,
+            maskedNickname(blocked, player.userId, player.nickname),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,

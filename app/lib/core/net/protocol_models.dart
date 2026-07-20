@@ -393,17 +393,27 @@ class GameOverEvent extends WireEvent {
 }
 
 class PlacementEntry {
-  PlacementEntry({required this.userId, required this.seat, required this.placement});
+  PlacementEntry({
+    required this.userId,
+    required this.seat,
+    required this.placement,
+    this.left = false,
+  });
 
   factory PlacementEntry.fromJson(Map<String, dynamic> json) => PlacementEntry(
         userId: json['userId'] as String,
         seat: _int(json['seat']),
         placement: _int(json['placement']),
+        left: json['left'] == true,
       );
 
   final String userId;
   final int seat;
   final int placement;
+
+  /// True when this player left the game mid-hand (consented leave) and was
+  /// re-ranked to the bottom by the server; absent on the wire otherwise.
+  final bool left;
 }
 
 /// Game-level `error` message (`{ code, message }`).

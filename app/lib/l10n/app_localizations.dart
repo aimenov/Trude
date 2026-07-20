@@ -1069,6 +1069,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t delete the account: {reason}'**
   String deleteAccountFailed(String reason);
+
+  /// No description provided for @reportPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportPlayer;
+
+  /// No description provided for @reportReasonNickname.
+  ///
+  /// In en, this message translates to:
+  /// **'Offensive nickname'**
+  String get reportReasonNickname;
+
+  /// No description provided for @reportReasonCheating.
+  ///
+  /// In en, this message translates to:
+  /// **'Cheating'**
+  String get reportReasonCheating;
+
+  /// No description provided for @reportReasonAbuse.
+  ///
+  /// In en, this message translates to:
+  /// **'Abusive behavior'**
+  String get reportReasonAbuse;
+
+  /// No description provided for @reportReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get reportReasonOther;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Report sent'**
+  String get reportSent;
+
+  /// No description provided for @blockPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get blockPlayer;
+
+  /// No description provided for @unblockPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get unblockPlayer;
+
+  /// No description provided for @playerBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Player blocked'**
+  String get playerBlocked;
+
+  /// No description provided for @blockedPlayerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Player'**
+  String get blockedPlayerName;
+
+  /// No description provided for @blockedPlayersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked players'**
+  String get blockedPlayersTitle;
+
+  /// No description provided for @blockedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No one here — and just as well'**
+  String get blockedEmpty;
+
+  /// No description provided for @joinBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t join this room'**
+  String get joinBlocked;
+
+  /// No description provided for @leftGameBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Left the game'**
+  String get leftGameBadge;
+
+  /// No description provided for @supportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get supportLabel;
+
+  /// No description provided for @emailCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Address copied'**
+  String get emailCopied;
+
+  /// No description provided for @kickPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Kick'**
+  String get kickPlayer;
 }
 
 class _AppLocalizationsDelegate

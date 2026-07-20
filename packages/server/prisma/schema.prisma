@@ -27,6 +27,10 @@ model User {
   questProgress    QuestProgress[]
   cosmetics        CosmeticOwnership[]
   iapReceipts      IapReceipt[]
+  blocksMade       Block[]             @relation("blocksMade")
+  blocksReceived   Block[]             @relation("blocksReceived")
+  reportsMade      Report[]            @relation("reportsMade")
+  reportsReceived  Report[]            @relation("reportsReceived")
 }
 
 model Identity {
@@ -146,6 +150,31 @@ model CosmeticOwnership {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, itemKey])
+}
+
+model Block {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("blocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("blocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model Report {
+  id         String   @id @default(uuid())
+  reporterId String
+  reportedId String
+  reason     String // nickname | cheating | abuse | other
+  roomId     String?
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+  reporter   User     @relation("reportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User     @relation("reportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId, createdAt])
 }
 
 model IapReceipt {

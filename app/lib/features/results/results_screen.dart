@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/motion/animation_speed.dart';
 import '../../core/net/connection_providers.dart';
 import '../../core/net/meta_providers.dart';
+import '../../core/net/moderation_providers.dart';
 import '../../core/strings.dart';
 import '../../core/theme/trude_theme.dart';
 import '../achievements/achievement_art.dart';
@@ -13,6 +14,7 @@ import '../economy/rewards_providers.dart';
 import '../game/widgets/card_widgets.dart';
 import '../home/parlor_widgets.dart';
 import '../leaderboard/rating_tiers.dart';
+import '../moderation/player_actions_sheet.dart';
 import '../shop/shop_widgets.dart';
 
 class ResultsScreen extends ConsumerWidget {
@@ -29,6 +31,8 @@ class ResultsScreen extends ConsumerWidget {
     final placements = [...?results?.placements]
       ..sort((a, b) => a.placement.compareTo(b.placement));
     final unlocked = ref.watch(unlockedThisGameProvider);
+    final blocked = ref.watch(blockedIdsProvider);
+    final myUserId = ref.watch(sessionProvider)?.userId ?? state.me?.userId;
 
     return ParlorBackdrop(
       child: Scaffold(
@@ -51,6 +55,19 @@ class ResultsScreen extends ConsumerWidget {
                           state: state,
                           results: results!,
                           entry: entry,
+                          blocked: blocked,
+                          // Tap a row -> report/block sheet; never for self.
+                          onTap: entry.userId == myUserId
+                              ? null
+                              : () => showPlayerActionsSheet(
+                                    context,
+                                    ref,
+                                    userId: entry.userId,
+                                    nickname: state
+                                            .playerById(entry.userId)
+                                            ?.nickname ??
+                                        Strings.seatName(entry.seat),
+                                  ),
                         ),
                       const RewardPanel(),
                       if (unlocked.isNotEmpty) ...[
@@ -124,16 +141,21 @@ class _PlacementPlaque extends StatelessWidget {
     required this.state,
     required this.results,
     required this.entry,
+    required this.blocked,
+    this.onTap,
   });
 
   final ClientGameState state;
   final GameOverEvent results;
   final PlacementEntry entry;
+  final Set<String> blocked;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final player = state.playerById(entry.userId);
-    final nickname = player?.nickname ?? Strings.seatName(entry.seat);
+    final nickname = maskedNickname(blocked, entry.userId,
+        player?.nickname ?? Strings.seatName(entry.seat));
     final isLoser = entry.userId == results.loserUserId;
     final isWinner = entry.placement == 1;
 
@@ -183,6 +205,17 @@ class _PlacementPlaque extends StatelessWidget {
                         : TrudeColors.textPrimary,
                   ),
                 ),
+                if (entry.left)
+                  // Mid-game leaver: etched «ПОКИНУЛ ИГРУ», the results-side
+                  // sibling of the seat avatar's «ВЫШЕЛ».
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      Strings.leftGameBadge.toUpperCase(),
+                      style: TrudeType.etched.copyWith(
+                          fontSize: 9, letterSpacing: 1.2, height: 1.2),
+                    ),
+                  ),
                 const SizedBox(height: 3),
                 Text(
                   Strings.statsLine(
@@ -210,20 +243,24 @@ class _PlacementPlaque extends StatelessWidget {
       ),
     );
 
-    if (!isLoser) return plaque;
     // Spotlight wash behind the loser's plaque.
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          radius: 1.1,
-          colors: [
-            TrudeColors.brassBright.withValues(alpha: 0.10),
-            TrudeColors.brassBright.withValues(alpha: 0),
-          ],
-        ),
-      ),
-      child: plaque,
-    );
+    final body = !isLoser
+        ? plaque
+        : DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                radius: 1.1,
+                colors: [
+                  TrudeColors.brassBright.withValues(alpha: 0.10),
+                  TrudeColors.brassBright.withValues(alpha: 0),
+                ],
+              ),
+            ),
+            child: plaque,
+          );
+    if (onTap == null) return body;
+    return GestureDetector(
+        behavior: HitTestBehavior.opaque, onTap: onTap, child: body);
   }
 }
 

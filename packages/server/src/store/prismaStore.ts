@@ -12,9 +12,9 @@ import {
 import { questReward, questsForDay } from '../quests/definitions.js';
 import { applyGameToLifetime, computeGameAwardPlan, evaluateUnlocks } from './shared.js';
 import type { EconomyNumbers } from './shared.js';
-import { freshLifetime, MetaError } from './store.js';
+import { freshLifetime, MetaError, REPORT_DAILY_LIMIT } from './store.js';
 import type {
-  AdGrantResult, DailyClaimResult, GameAwards, GameResultInput, IapGrantResult,
+  AdGrantResult, BlockEntry, DailyClaimResult, GameAwards, GameResultInput, IapGrantResult,
   LeaderboardPage, LifetimeStats, MetaProfile, OwnedCosmetics, QuestState, Store, UserRecord,
 } from './store.js';
 
@@ -149,7 +149,9 @@ export class PrismaStore implements Store {
           deckSize: result.deckSize,
           status: result.status,
           loserUserId: result.loserUserId,
-          participants: result.participants.map((p) => ({ userId: p.userId, placement: p.placement })),
+          participants: result.participants.map((p) => ({
+            userId: p.userId, placement: p.placement, ...(p.leaver === true ? { leaver: true } : {}),
+          })),
           isPrivate: result.isPrivate ?? false,
           actionCount: result.actionCount ?? 0,
           rated: result.status === 'FINISHED' && plan.rated,
@@ -519,6 +521,71 @@ export class PrismaStore implements Store {
   }
 
   // -------------------------------------------------------------------------
+  // Blocks & reports
+  // -------------------------------------------------------------------------
+
+  async blockUser(blockerId: string, blockedId: string): Promise<void> {
+    if (blockerId === blockedId) throw new MetaError('CANNOT_BLOCK_SELF');
+    await this.prisma.block.upsert({
+      where: { blockerId_blockedId: { blockerId, blockedId } },
+      update: {}, // duplicate block = idempotent success
+      create: { blockerId, blockedId },
+    });
+  }
+
+  async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+    await this.prisma.block.deleteMany({ where: { blockerId, blockedId } });
+  }
+
+  async listBlocks(userId: string): Promise<BlockEntry[]> {
+    const rows = await this.prisma.block.findMany({
+      where: { blockerId: userId },
+      include: { blocked: { select: { nickname: true } } },
+      orderBy: [{ createdAt: 'desc' }, { blockedId: 'asc' }],
+    });
+    return rows.map((r) => ({
+      userId: r.blockedId,
+      nickname: r.blocked?.nickname ?? '—',
+      createdAt: r.createdAt.getTime(),
+    }));
+  }
+
+  async reportUser(
+    reporterId: string,
+    report: { userId: string; reason: string; roomId?: string | undefined },
+    now: Date = new Date(),
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const since = dayStartUtc(now);
+      const dupe = await tx.report.findFirst({
+        where: { reporterId, reportedId: report.userId, createdAt: { gte: since } },
+      });
+      if (dupe) return; // idempotent per reporter+reported+UTC day
+      const todays = await tx.report.count({ where: { reporterId, createdAt: { gte: since } } });
+      if (todays >= REPORT_DAILY_LIMIT) throw new MetaError('REPORT_LIMIT');
+      await tx.report.create({
+        data: {
+          reporterId, reportedId: report.userId, reason: report.reason,
+          roomId: report.roomId ?? null, createdAt: now,
+        },
+      });
+    });
+  }
+
+  async hasBlockBetween(userId: string, otherIds: string[]): Promise<boolean> {
+    if (otherIds.length === 0) return false;
+    const row = await this.prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: userId, blockedId: { in: otherIds } },
+          { blockedId: userId, blockerId: { in: otherIds } },
+        ],
+      },
+    });
+    return row !== null;
+  }
+
+  // -------------------------------------------------------------------------
   // Account deletion
   // -------------------------------------------------------------------------
 
@@ -526,6 +593,8 @@ export class PrismaStore implements Store {
     // Relations declare onDelete: Cascade for the new models; Identity/PlayerStats/
     // UserAchievement predate that, so clear them explicitly in one transaction.
     await this.prisma.$transaction([
+      this.prisma.block.deleteMany({ where: { OR: [{ blockerId: userId }, { blockedId: userId }] } }),
+      this.prisma.report.deleteMany({ where: { OR: [{ reporterId: userId }, { reportedId: userId }] } }),
       this.prisma.identity.deleteMany({ where: { userId } }),
       this.prisma.playerStats.deleteMany({ where: { userId } }),
       this.prisma.userAchievement.deleteMany({ where: { userId } }),

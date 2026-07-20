@@ -21,6 +21,9 @@ const STATUS_BY_CODE: Record<string, number> = {
   UNKNOWN_PRODUCT: 404,
   RECEIPT_OWNED_BY_OTHER_USER: 409,
   INVALID_RECEIPT: 400,
+  CANNOT_BLOCK_SELF: 400,
+  REPORT_LIMIT: 429,
+  BLOCKED: 403,
 };
 
 function sendMetaError(res: Response, e: unknown): void {
@@ -52,6 +55,14 @@ const iapGoogleBody = z.object({
 });
 
 const iapAppleBody = z.object({ receipt: z.string().min(1).max(65536) });
+
+const blockBody = z.object({ userId: z.string().min(1).max(64) });
+
+const reportBody = z.object({
+  userId: z.string().min(1).max(64),
+  reason: z.enum(['nickname', 'cheating', 'abuse', 'other']),
+  roomId: z.string().min(1).max(64).optional(),
+});
 
 export function metaRoutes(store: Store, ads: AdRewardVerifier, iap: PurchaseValidator): Router {
   const router = Router();
@@ -161,6 +172,47 @@ export function metaRoutes(store: Store, ads: AdRewardVerifier, iap: PurchaseVal
       return res.json(await store.applyIapPurchase(claims.sub, {
         platform: 'apple', productId: valid.productId, orderId: valid.orderId,
       }));
+    } catch (e) {
+      return sendMetaError(res, e);
+    }
+  });
+
+  // ---- Blocks & reports ----------------------------------------------------
+
+  router.get('/me/blocks', async (req: Request, res: Response) => {
+    const claims = bearer(req);
+    if (!claims) return res.status(401).json({ error: 'UNAUTHORIZED' });
+    return res.json({ blocks: await store.listBlocks(claims.sub) });
+  });
+
+  router.post('/me/blocks', async (req: Request, res: Response) => {
+    const claims = bearer(req);
+    if (!claims) return res.status(401).json({ error: 'UNAUTHORIZED' });
+    const body = blockBody.safeParse(req.body);
+    if (!body.success) return res.status(400).json({ error: 'BAD_BODY' });
+    try {
+      await store.blockUser(claims.sub, body.data.userId);
+      return res.json({ blocked: true });
+    } catch (e) {
+      return sendMetaError(res, e);
+    }
+  });
+
+  router.delete('/me/blocks/:userId', async (req: Request, res: Response) => {
+    const claims = bearer(req);
+    if (!claims) return res.status(401).json({ error: 'UNAUTHORIZED' });
+    await store.unblockUser(claims.sub, String(req.params['userId']));
+    return res.status(204).end();
+  });
+
+  router.post('/reports', async (req: Request, res: Response) => {
+    const claims = bearer(req);
+    if (!claims) return res.status(401).json({ error: 'UNAUTHORIZED' });
+    const body = reportBody.safeParse(req.body);
+    if (!body.success) return res.status(400).json({ error: 'BAD_BODY' });
+    try {
+      await store.reportUser(claims.sub, body.data);
+      return res.json({ received: true });
     } catch (e) {
       return sendMetaError(res, e);
     }

@@ -10,9 +10,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/net/connection_providers.dart';
 import '../../core/net/economy_providers.dart';
+import '../../core/net/moderation_providers.dart';
 import '../../core/strings.dart';
 import '../../core/theme/trude_theme.dart';
 import '../home/parlor_widgets.dart';
+import '../moderation/player_actions_sheet.dart';
 import 'rating_tiers.dart';
 
 class LeaderboardScreen extends ConsumerStatefulWidget {
@@ -106,19 +108,28 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
     if (entries.isEmpty) {
       return _scrollableMessage(context, Strings.leaderboardEmpty);
     }
+    final blocked = ref.watch(blockedIdsProvider);
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       itemCount: entries.length,
       itemBuilder: (context, i) {
         final e = entries[i];
+        final userId = e.userId as String;
+        final nickname = e.nickname as String;
+        final isMe = myUserId != null && userId == myUserId;
         return _LeaderRow(
           rank: e.rank as int,
-          nickname: e.nickname as String,
+          nickname: maskedNickname(blocked, userId, nickname),
           value: e.value as int,
           gamesRated: e.gamesRated as int,
-          isMe: myUserId != null && e.userId == myUserId,
+          isMe: isMe,
           showTier: _scope == LeaderboardScope.alltime,
+          // Tap a row -> report/block sheet; never for my own row.
+          onTap: isMe
+              ? null
+              : () => showPlayerActionsSheet(context, ref,
+                  userId: userId, nickname: nickname),
         );
       },
     );
@@ -135,6 +146,7 @@ class _LeaderRow extends StatelessWidget {
     required this.gamesRated,
     required this.isMe,
     required this.showTier,
+    this.onTap,
   });
 
   final int rank;
@@ -143,11 +155,12 @@ class _LeaderRow extends StatelessWidget {
   final int gamesRated;
   final bool isMe;
   final bool showTier;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final top3 = rank <= 3;
-    return Container(
+    final row = Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
@@ -224,6 +237,9 @@ class _LeaderRow extends StatelessWidget {
         ],
       ),
     );
+    if (onTap == null) return row;
+    return GestureDetector(
+        behavior: HitTestBehavior.opaque, onTap: onTap, child: row);
   }
 }
 

@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/motion/animation_speed.dart';
 import '../../../core/net/client_game_state.dart';
+import '../../../core/net/moderation_providers.dart'
+    show maskedInitial, maskedNickname;
 import '../../../core/strings.dart';
 import '../../../core/theme/trude_theme.dart';
 import '../anim/motion_jitter.dart';
@@ -28,10 +30,16 @@ class SeatAvatar extends StatefulWidget {
     required this.turnTotal,
     required this.speed,
     required this.anchors,
+    this.blockedIds = const <String>{},
   });
 
   final PlayerView player;
   final bool isTurn;
+
+  /// UserIds this user has blocked (from `blockedIdsProvider`): a blocked
+  /// player's nickname renders as [Strings.blockedPlayerName] and their
+  /// portrait initial as `'?'`.
+  final Set<String> blockedIds;
 
   /// Turn deadline (epoch ms) when it's this seat's turn; null otherwise.
   /// The avatar ticks its own countdown from it — the parent screen no
@@ -171,7 +179,8 @@ class _SeatAvatarState extends State<SeatAvatar>
             _portraitWithRings(theme),
             const SizedBox(height: 2),
             Text(
-              player.nickname,
+              maskedNickname(
+                  widget.blockedIds, player.userId, player.nickname),
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: TrudeColors.textPrimary),
@@ -248,10 +257,8 @@ class _SeatAvatarState extends State<SeatAvatar>
     );
   }
 
-  String _initial() {
-    final n = widget.player.nickname;
-    return n.isEmpty ? '?' : n[0].toUpperCase();
-  }
+  String _initial() => maskedInitial(
+      widget.blockedIds, widget.player.userId, widget.player.nickname);
 
   Widget _badgesRow(ThemeData theme) {
     final player = widget.player;

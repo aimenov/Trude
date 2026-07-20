@@ -44,7 +44,9 @@ export interface GameResultInput {
   deckSize: number;
   status: 'FINISHED' | 'ABANDONED';
   loserUserId: string | null;
-  participants: { userId: string; placement: number; stats: PlayerGameStats }[];
+  /** `placement` is the leaver-adjusted standing; `leaver: true` marks a consented
+   *  mid-game quit (0 coins, no quest progress; rating applies as normal). */
+  participants: { userId: string; placement: number; stats: PlayerGameStats; leaver?: boolean }[];
   /** Private rooms halve coins and are never rated. Defaults false. */
   isPrivate?: boolean;
   /** Engine action count at game over; short games award nothing. Defaults 0. */
@@ -129,6 +131,18 @@ export interface LeaderboardPage {
   me: { rank: number; value: number; gamesRated: number } | null;
 }
 
+/** One row of `GET /me/blocks` — a user the caller has blocked. */
+export interface BlockEntry {
+  userId: string;
+  /** '—' when the blocked account no longer exists. */
+  nickname: string;
+  /** Epoch ms of the block. */
+  createdAt: number;
+}
+
+/** Max NEW reports (distinct reported users) one reporter may file per UTC day. */
+export const REPORT_DAILY_LIMIT = 20;
+
 /** Store-level failure with a wire error code (mapped to HTTP in meta/routes.ts). */
 export class MetaError extends Error {
   constructor(public readonly code: string) {
@@ -156,6 +170,17 @@ export interface Store {
   adRemainingToday(userId: string, kind: 'shop' | 'double', now?: Date): Promise<number>;
   applyIapPurchase(userId: string, purchase: { platform: 'google' | 'apple'; productId: string; orderId: string }): Promise<IapGrantResult>;
   getLeaderboard(scope: 'weekly' | 'alltime', limit: number, meUserId: string, now?: Date): Promise<LeaderboardPage>;
+  /** Blocks `blockedId` for `blockerId`. Duplicate = idempotent success; self ⇒ CANNOT_BLOCK_SELF. */
+  blockUser(blockerId: string, blockedId: string): Promise<void>;
+  /** Removes a block. Idempotent (unblocking a non-block succeeds silently). */
+  unblockUser(blockerId: string, blockedId: string): Promise<void>;
+  /** Users blocked BY `userId`, newest first. */
+  listBlocks(userId: string): Promise<BlockEntry[]>;
+  /** Files a report. Same reporter→reported same UTC day = idempotent success;
+   *  more than REPORT_DAILY_LIMIT new reports/day ⇒ REPORT_LIMIT. */
+  reportUser(reporterId: string, report: { userId: string; reason: string; roomId?: string | undefined }, now?: Date): Promise<void>;
+  /** True when a block exists between `userId` and ANY of `otherIds`, in either direction. */
+  hasBlockBetween(userId: string, otherIds: string[]): Promise<boolean>;
   /** Deletes the user and every dependent row. Idempotent. */
   deleteUser(userId: string): Promise<void>;
 }
@@ -197,6 +222,8 @@ export class MemoryStore implements Store {
   private selected = new Map<string, { cardBack: string; felt: string }>();
   private premium = new Set<string>();
   private iapOrders = new Map<string, { userId: string; productId: string }>();
+  private blocks = new Map<string, Map<string, Date>>(); // blockerId -> (blockedId -> createdAt)
+  private reports: { reporterId: string; reportedId: string; reason: string; roomId: string | null; createdAt: Date }[] = [];
 
   constructor(private economy: EconomyNumbers = config.economy) {}
 
@@ -551,6 +578,54 @@ export class MemoryStore implements Store {
   }
 
   // -------------------------------------------------------------------------
+  // Blocks & reports
+  // -------------------------------------------------------------------------
+
+  async blockUser(blockerId: string, blockedId: string): Promise<void> {
+    if (blockerId === blockedId) throw new MetaError('CANNOT_BLOCK_SELF');
+    const mine = this.blocks.get(blockerId) ?? new Map<string, Date>();
+    this.blocks.set(blockerId, mine);
+    if (!mine.has(blockedId)) mine.set(blockedId, new Date());
+  }
+
+  async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+    this.blocks.get(blockerId)?.delete(blockedId);
+  }
+
+  async listBlocks(userId: string): Promise<BlockEntry[]> {
+    const mine = this.blocks.get(userId);
+    if (!mine) return [];
+    return [...mine.entries()]
+      .map(([blockedId, createdAt]) => ({
+        userId: blockedId,
+        nickname: this.users.get(blockedId)?.nickname ?? '—',
+        createdAt: createdAt.getTime(),
+      }))
+      .sort((a, b) => b.createdAt - a.createdAt || a.userId.localeCompare(b.userId));
+  }
+
+  async reportUser(
+    reporterId: string,
+    report: { userId: string; reason: string; roomId?: string | undefined },
+    now: Date = new Date(),
+  ): Promise<void> {
+    const day = utcDayOf(now);
+    const todays = this.reports.filter((r) => r.reporterId === reporterId && utcDayOf(r.createdAt) === day);
+    if (todays.some((r) => r.reportedId === report.userId)) return; // idempotent per day
+    if (todays.length >= REPORT_DAILY_LIMIT) throw new MetaError('REPORT_LIMIT');
+    this.reports.push({
+      reporterId, reportedId: report.userId, reason: report.reason,
+      roomId: report.roomId ?? null, createdAt: now,
+    });
+  }
+
+  async hasBlockBetween(userId: string, otherIds: string[]): Promise<boolean> {
+    const mine = this.blocks.get(userId);
+    return otherIds.some((other) =>
+      (mine?.has(other) ?? false) || (this.blocks.get(other)?.has(userId) ?? false));
+  }
+
+  // -------------------------------------------------------------------------
   // Account deletion
   // -------------------------------------------------------------------------
 
@@ -570,5 +645,8 @@ export class MemoryStore implements Store {
     for (const season of this.seasons.values()) season.delete(userId);
     for (const key of [...this.questProg.keys()]) if (key.startsWith(`${userId}|`)) this.questProg.delete(key);
     for (const [orderId, o] of this.iapOrders) if (o.userId === userId) this.iapOrders.delete(orderId);
+    this.blocks.delete(userId);
+    for (const mine of this.blocks.values()) mine.delete(userId);
+    this.reports = this.reports.filter((r) => r.reporterId !== userId && r.reportedId !== userId);
   }
 }

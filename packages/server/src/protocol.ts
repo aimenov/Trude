@@ -75,7 +75,8 @@ export type WireEvent =
   | { type: 'roomConfigured'; deckSize: number; turnTimerSec: number; maxPlayers: number }
   | {
       type: 'gameOver'; loserSeat: number; loserUserId: string; jokerCard: Card;
-      placements: { userId: string; seat: number; placement: number }[];
+      /** `left: true` marks a consented mid-game leaver (re-ranked last); absent otherwise. */
+      placements: { userId: string; seat: number; placement: number; left?: boolean }[];
       stats: Record<string, unknown>;
     }
   | { type: 'reaction'; seat: number; emoji: string };

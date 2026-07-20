@@ -53,7 +53,8 @@ export interface GameAwardPlanInput {
   isPrivate: boolean;
   actionCount: number;
   day: string;
-  participants: { userId: string; placement: number; stats: PlayerGameStats }[];
+  /** `placement` is leaver-adjusted; `leaver: true` = consented mid-game quit. */
+  participants: { userId: string; placement: number; stats: PlayerGameStats; leaver?: boolean }[];
   /** Current rating snapshots; missing user = fresh 1000. */
   ratings: ReadonlyMap<string, RatingSnapshot>;
   /** Per-user sum of today's GAME_AWARD ledger deltas (daily-cap clamp). */
@@ -107,8 +108,10 @@ export function computeGameAwardPlan(input: GameAwardPlanInput): GameAwardPlan {
     const ratingDelta = ratingDeltas.get(part.userId) ?? 0;
     const newRating = eligibility.rated ? applyDelta(snapshot, ratingDelta) : snapshot;
 
+    // A mid-game leaver forfeits coins and quest progress entirely; their
+    // rating still takes the adjusted-last-placement hit computed above.
     let coins = 0;
-    if (eligibility.awardsEligible) {
+    if (eligibility.awardsEligible && part.leaver !== true) {
       const base = Math.round(
         placementCoins(input.participants.length, part.placement) * eligibility.coinMultiplier,
       );
@@ -120,7 +123,7 @@ export function computeGameAwardPlan(input: GameAwardPlanInput): GameAwardPlan {
     let questCoins = 0;
     let completedCount = 0;
     let freshlyCompleted = 0;
-    if (eligibility.rated) {
+    if (eligibility.rated && part.leaver !== true) {
       const mine = input.questProgress.get(part.userId);
       const outcome = { won: part.placement === 1, played: true };
       for (const def of dayQuests) {

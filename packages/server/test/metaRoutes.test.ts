@@ -70,6 +70,8 @@ describe('meta routes', () => {
       ['GET', '/ads/token?kind=shop'], ['POST', '/ads/reward', { token: 'x' }],
       ['POST', '/iap/google', { purchaseToken: 'x', productId: 'coins_small' }],
       ['POST', '/iap/apple', { receipt: 'x' }], ['DELETE', '/me'],
+      ['GET', '/me/blocks'], ['POST', '/me/blocks', { userId: 'x' }],
+      ['DELETE', '/me/blocks/x'], ['POST', '/reports', { userId: 'x', reason: 'abuse' }],
     ];
     for (const [method, path, body] of routes) {
       const res = await call(method, path, null, body);
@@ -258,6 +260,57 @@ describe('meta routes', () => {
     expect(weekly.seasonKey).toMatch(/^\d{4}-W\d{2}$/);
     expect(weekly.entries.length).toBeLessThanOrEqual(2);
     expect(weekly.me).not.toBeNull(); // pinned rank even when off-page
+  });
+
+  it('blocks round-trip: self 400, block, list, idempotent unblock', async () => {
+    const u1 = await guest('Blocker');
+    const u2 = await guest('Blockee');
+
+    const self = await call('POST', '/me/blocks', u1, { userId: u1.userId });
+    expect(self.status).toBe(400);
+    expect((await self.json() as Record<string, unknown>)['error']).toBe('CANNOT_BLOCK_SELF');
+    expect((await call('POST', '/me/blocks', u1, {})).status).toBe(400);
+
+    const blocked = await (await call('POST', '/me/blocks', u1, { userId: u2.userId })).json();
+    expect(blocked).toEqual({ blocked: true });
+    expect((await call('POST', '/me/blocks', u1, { userId: u2.userId })).status).toBe(200); // idempotent
+
+    const list = await (await call('GET', '/me/blocks', u1)).json() as {
+      blocks: { userId: string; nickname: string; createdAt: number }[];
+    };
+    expect(list.blocks).toHaveLength(1);
+    expect(list.blocks[0]).toMatchObject({ userId: u2.userId, nickname: 'Blockee' });
+    expect(typeof list.blocks[0]!.createdAt).toBe('number');
+    // The blocked side's own list stays empty.
+    expect(((await (await call('GET', '/me/blocks', u2)).json()) as { blocks: unknown[] }).blocks).toEqual([]);
+
+    expect((await call('DELETE', `/me/blocks/${u2.userId}`, u1)).status).toBe(204);
+    expect(((await (await call('GET', '/me/blocks', u1)).json()) as { blocks: unknown[] }).blocks).toEqual([]);
+    expect((await call('DELETE', `/me/blocks/${u2.userId}`, u1)).status).toBe(204); // idempotent
+  });
+
+  it('reports round-trip: received, bad reason 400, same-day dedupe 200, cap 429', async () => {
+    const u = await guest('Reporter');
+    const target = await guest('ReportTarget');
+
+    const ok = await (await call('POST', '/reports', u, {
+      userId: target.userId, reason: 'abuse', roomId: 'room-9',
+    })).json();
+    expect(ok).toEqual({ received: true });
+
+    expect((await call('POST', '/reports', u, { userId: target.userId, reason: 'volcano' })).status).toBe(400);
+    expect((await call('POST', '/reports', u, { userId: target.userId })).status).toBe(400);
+
+    // Same reporter → same target, same day: idempotent 200.
+    expect((await call('POST', '/reports', u, { userId: target.userId, reason: 'cheating' })).status).toBe(200);
+
+    // Fill the day's remaining 19 slots through the store, then the cap bites.
+    for (let i = 0; i < 19; i++) {
+      await store.reportUser(u.userId, { userId: `ghost-${i}`, reason: 'other' });
+    }
+    const capped = await call('POST', '/reports', u, { userId: 'one-too-many', reason: 'other' });
+    expect(capped.status).toBe(429);
+    expect((await capped.json() as Record<string, unknown>)['error']).toBe('REPORT_LIMIT');
   });
 
   it('DELETE /me removes the account and its data', async () => {

@@ -840,4 +840,55 @@ class AppLocalizationsRu extends AppLocalizations {
   String deleteAccountFailed(String reason) {
     return 'Не удалось удалить аккаунт: $reason';
   }
+
+  @override
+  String get reportPlayer => 'Пожаловаться';
+
+  @override
+  String get reportReasonNickname => 'Оскорбительный ник';
+
+  @override
+  String get reportReasonCheating => 'Нечестная игра';
+
+  @override
+  String get reportReasonAbuse => 'Оскорбительное поведение';
+
+  @override
+  String get reportReasonOther => 'Другое';
+
+  @override
+  String get reportSent => 'Жалоба отправлена';
+
+  @override
+  String get blockPlayer => 'Заблокировать';
+
+  @override
+  String get unblockPlayer => 'Разблокировать';
+
+  @override
+  String get playerBlocked => 'Игрок заблокирован';
+
+  @override
+  String get blockedPlayerName => 'Игрок';
+
+  @override
+  String get blockedPlayersTitle => 'Заблокированные игроки';
+
+  @override
+  String get blockedEmpty => 'Никого — и славно';
+
+  @override
+  String get joinBlocked => 'Нельзя присоединиться к этой комнате';
+
+  @override
+  String get leftGameBadge => 'Покинул игру';
+
+  @override
+  String get supportLabel => 'Поддержка';
+
+  @override
+  String get emailCopied => 'Адрес скопирован';
+
+  @override
+  String get kickPlayer => 'Выгнать';
 }

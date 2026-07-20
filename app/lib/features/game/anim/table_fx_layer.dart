@@ -16,6 +16,7 @@ import '../../../core/theme/trude_theme.dart';
 import '../../../core/haptics/haptics_service.dart';
 import '../../../core/motion/animation_speed.dart';
 import '../../../core/net/connection_providers.dart';
+import '../../../core/net/moderation_providers.dart';
 import '../../../core/strings.dart';
 import '../widgets/card_widgets.dart';
 import '../widgets/cosmetic_styles.dart';
@@ -283,13 +284,29 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
   }
 
   void _onReaction(ReactionMessage r) {
+    final rendered = ref.read(renderedGameStateProvider);
+    // Blocked players' content is hidden: their reactions never burst (nor
+    // pop the sfx) — checked before any effect fires.
+    final sender = rendered.playerAtSeat(r.seat);
+    if (sender != null &&
+        ref.read(blockedIdsProvider).contains(sender.userId)) {
+      return;
+    }
     if (ref.read(animationSpeedProvider).isOff) return;
-    final mySeat = ref.read(renderedGameStateProvider).mySeat;
-    final rect = _anchors.originForSeat(r.seat, mySeat);
+    final rect = _anchors.originForSeat(r.seat, rendered.mySeat);
     if (rect == null) return;
     _sfx.reactionPop();
     _bursts.burst(
         Strings.reactionEmoji[r.emoji] ?? r.emoji, rect.topCenter);
+  }
+
+  /// [ClientGameState.nicknameAtSeat] for the game-over overlay, with a
+  /// blocked loser masked to [Strings.blockedPlayerName].
+  String _maskedLoserName(ClientGameState state, int seat) {
+    final player = state.playerAtSeat(seat);
+    if (player == null) return state.nicknameAtSeat(seat);
+    return maskedNickname(
+        ref.watch(blockedIdsProvider), player.userId, player.nickname);
   }
 
   // -- Build ------------------------------------------------------------------
@@ -354,7 +371,8 @@ class _TableFxLayerState extends ConsumerState<TableFxLayer> {
             // Per-step identity, same latent bug class as the quad above.
             key: ObjectKey(gameOver),
             event: gameOver.step.event! as GameOverEvent,
-            loserName: gameOver.before.nicknameAtSeat(
+            loserName: _maskedLoserName(
+                gameOver.before,
                 (gameOver.step.event! as GameOverEvent).loserSeat),
             duration: gameOver.duration,
             fromRect: _anchors.seatRect(

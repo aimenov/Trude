@@ -9,8 +9,10 @@ import '../../core/audio/sfx_service.dart';
 import '../../core/haptics/haptics_service.dart';
 import '../../core/motion/animation_speed.dart';
 import '../../core/net/connection_providers.dart';
+import '../../core/net/moderation_providers.dart';
 import '../../core/strings.dart';
 import '../../core/theme/trude_theme.dart';
+import '../moderation/player_actions_sheet.dart';
 import 'anim/motion_spec.dart';
 import 'anim/rendered_state.dart';
 import 'anim/table_anchors.dart';
@@ -394,15 +396,23 @@ class _TableScreenState extends ConsumerState<TableScreen> {
           for (final p in opponents)
             KeyedSubtree(
               key: _anchors.seatKey(p.seat),
-              child: SeatAvatar(
-                player: p,
-                isTurn: state.turn?.seat == p.seat,
-                deadlineTs: state.turn?.seat == p.seat
-                    ? state.turn!.deadlineTs
-                    : null,
-                turnTotal: turnTotal,
-                speed: speed,
-                anchors: _anchors,
+              // Tap an opponent's seat -> report/block sheet. Opponents never
+              // include my own seat, so the sheet is never shown for self.
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => showPlayerActionsSheet(context, ref,
+                    userId: p.userId, nickname: p.nickname),
+                child: SeatAvatar(
+                  player: p,
+                  isTurn: state.turn?.seat == p.seat,
+                  deadlineTs: state.turn?.seat == p.seat
+                      ? state.turn!.deadlineTs
+                      : null,
+                  turnTotal: turnTotal,
+                  speed: speed,
+                  anchors: _anchors,
+                  blockedIds: ref.watch(blockedIdsProvider),
+                ),
               ),
             ),
         ],
@@ -468,6 +478,15 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     );
   }
 
+  /// [ClientGameState.nicknameAtSeat] with blocked players masked to
+  /// [Strings.blockedPlayerName] (claim plaque + turn line render sites).
+  String _maskedSeatName(ClientGameState state, int seat) {
+    final player = state.playerAtSeat(seat);
+    if (player == null) return Strings.seatName(seat);
+    return maskedNickname(
+        ref.watch(blockedIdsProvider), player.userId, player.nickname);
+  }
+
   /// The standing claim, engraved into a brass plaque directly under the
   /// laid-down row: «Вася: ТРИ СЕМЁРКИ» / "Wes: THREE SEVENS".
   Widget _claimPlaque(ClientGameState state, double scale) {
@@ -476,7 +495,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       decoration: _brassPlaque(),
       child: Text(
         Strings.lastClaimPlaque(
-          state.nicknameAtSeat(state.lastThrowSeat!),
+          _maskedSeatName(state, state.lastThrowSeat!),
           Strings.claimBody(state.lastThrowCount, state.pileRank!),
         ),
         style: _engraved(16 * scale),
@@ -516,8 +535,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                 ? Strings.yourTurnForcedCheck
                 : Strings.yourTurnRespond)
         : (turn.mustCheck
-            ? Strings.forcedCheckTurn(state.nicknameAtSeat(turn.seat))
-            : state.nicknameAtSeat(turn.seat));
+            ? Strings.forcedCheckTurn(_maskedSeatName(state, turn.seat))
+            : _maskedSeatName(state, turn.seat));
     // Graphic-only countdown: the ring is the countdown (no numeric text).
     // Its total is the armed decision window, so it starts full and is
     // pinned full through the animation grace.

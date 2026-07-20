@@ -836,4 +836,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String deleteAccountFailed(String reason) {
     return 'Couldn\'t delete the account: $reason';
   }
+
+  @override
+  String get reportPlayer => 'Report';
+
+  @override
+  String get reportReasonNickname => 'Offensive nickname';
+
+  @override
+  String get reportReasonCheating => 'Cheating';
+
+  @override
+  String get reportReasonAbuse => 'Abusive behavior';
+
+  @override
+  String get reportReasonOther => 'Other';
+
+  @override
+  String get reportSent => 'Report sent';
+
+  @override
+  String get blockPlayer => 'Block';
+
+  @override
+  String get unblockPlayer => 'Unblock';
+
+  @override
+  String get playerBlocked => 'Player blocked';
+
+  @override
+  String get blockedPlayerName => 'Player';
+
+  @override
+  String get blockedPlayersTitle => 'Blocked players';
+
+  @override
+  String get blockedEmpty => 'No one here — and just as well';
+
+  @override
+  String get joinBlocked => 'You can\'t join this room';
+
+  @override
+  String get leftGameBadge => 'Left the game';
+
+  @override
+  String get supportLabel => 'Support';
+
+  @override
+  String get emailCopied => 'Address copied';
+
+  @override
+  String get kickPlayer => 'Kick';
 }

@@ -7,6 +7,7 @@ import '../../features/home/home_screen.dart';
 import '../../features/leaderboard/leaderboard_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/lobby/lobby_screen.dart';
+import '../../features/moderation/blocked_players_screen.dart';
 import '../../features/nickname/nickname_screen.dart';
 import '../../features/results/results_screen.dart';
 import '../../features/rooms/open_rooms_screen.dart';
@@ -37,6 +38,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/achievements',
           builder: (_, _) => const AchievementsScreen()),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+      GoRoute(path: '/blocked',
+          builder: (_, _) => const BlockedPlayersScreen()),
       GoRoute(path: '/leaderboard',
           builder: (_, _) => const LeaderboardScreen()),
       GoRoute(path: '/shop', builder: (_, _) => const ShopScreen()),

@@ -276,6 +276,127 @@ describe('MemoryStore IAP', () => {
   });
 });
 
+describe('MemoryStore leaver awards', () => {
+  it('a leaver gets 0 coins, no quest progress, and the last-place rating hit; others unaffected', async () => {
+    const store = new MemoryStore();
+    const [a, b, c] = await newUsers(store, 3);
+
+    // c consented-left mid-game: re-ranked last and flagged.
+    const input = publicGame([a!, b!, c!]);
+    input.participants[2]!.leaver = true;
+    const awards = await store.recordGameResult(input);
+
+    const leaver = awards.get(c!)!;
+    expect(leaver.coins).toBe(0);
+    expect(leaver.quests).toEqual([]);
+    expect(leaver.rated).toBe(true); // still a rated game for everyone
+    expect(leaver.ratingDelta).toBeLessThan(0); // last-place hit
+    expect(leaver.newRating).toBe(1000 + leaver.ratingDelta);
+    expect(leaver.balance).toBe(0);
+
+    // No GAME_AWARD ledger row for the leaver at all.
+    const s = store as unknown as { ledger: Map<string, { userId: string; reason: string }> };
+    expect([...s.ledger.values()].filter((r) => r.userId === c! && r.reason === 'GAME_AWARD')).toHaveLength(0);
+    expect(await store.getQuestState(c!).then((q) => q.quests.every((x) => x.progress === 0))).toBe(true);
+
+    // Rating stays near-zero-sum (equal fresh Ks; only rounding drift allowed).
+    const sum = [a!, b!, c!].reduce((acc, id) => acc + awards.get(id)!.ratingDelta, 0);
+    expect(Math.abs(sum)).toBeLessThanOrEqual(2);
+
+    // The stayers earn exactly their placement coins and quest progress.
+    expect(awards.get(a!)!.coins).toBe(25);
+    expect(awards.get(b!)!.coins).toBe(12);
+    expect(awards.get(a!)!.quests).toHaveLength(3);
+
+    // Stats still fold for the leaver.
+    expect((await store.getStats(c!)).gamesPlayed).toBe(1);
+
+    // No daily-cap interference: a later clean game pays the leaver normally.
+    const clean = await store.recordGameResult(publicGame([c!, a!, b!]));
+    expect(clean.get(c!)!.coins).toBe(25);
+
+    for (const id of [a!, b!, c!]) expectWalletMatchesLedger(store, id);
+  });
+});
+
+describe('MemoryStore blocks & reports', () => {
+  it('block: self rejected, idempotent, listed newest-first, unblock idempotent', async () => {
+    const store = new MemoryStore();
+    const [a, b, c] = await newUsers(store, 3);
+
+    await expectMetaError(store.blockUser(a!, a!), 'CANNOT_BLOCK_SELF');
+    await store.blockUser(a!, b!);
+    await store.blockUser(a!, b!); // duplicate = idempotent success
+    await store.blockUser(a!, c!);
+
+    const list = await store.listBlocks(a!);
+    expect(list).toHaveLength(2);
+    expect(list.map((e) => e.userId).sort()).toEqual([b!, c!].sort());
+    expect(list.find((e) => e.userId === b!)!.nickname).toBe('User1');
+    expect(typeof list[0]!.createdAt).toBe('number');
+    expect(await store.listBlocks(b!)).toEqual([]); // one-directional list
+
+    await store.unblockUser(a!, c!);
+    await store.unblockUser(a!, c!); // idempotent
+    expect((await store.listBlocks(a!)).map((e) => e.userId)).toEqual([b!]);
+  });
+
+  it('hasBlockBetween sees both directions and any member of the set', async () => {
+    const store = new MemoryStore();
+    const [a, b, c] = await newUsers(store, 3);
+    await store.blockUser(a!, b!);
+
+    expect(await store.hasBlockBetween(a!, [b!])).toBe(true); // blocker joins blocked
+    expect(await store.hasBlockBetween(b!, [a!])).toBe(true); // blocked joins blocker
+    expect(await store.hasBlockBetween(a!, [c!])).toBe(false);
+    expect(await store.hasBlockBetween(b!, [c!, a!])).toBe(true); // any seat matches
+    expect(await store.hasBlockBetween(a!, [])).toBe(false);
+
+    await store.unblockUser(a!, b!);
+    expect(await store.hasBlockBetween(b!, [a!])).toBe(false);
+  });
+
+  it('reports: per-day dedupe, daily cap of 20 new reports, next day resets', async () => {
+    const store = new MemoryStore();
+    const [a, b] = await newUsers(store, 2);
+    const day1 = new Date('2026-07-10T10:00:00Z');
+
+    await store.reportUser(a!, { userId: b!, reason: 'abuse', roomId: 'r1' }, day1);
+    await store.reportUser(a!, { userId: b!, reason: 'cheating' }, day1); // same day = idempotent
+
+    // 19 more distinct reports hit the cap of 20 for the day…
+    for (let i = 0; i < 19; i++) {
+      await store.reportUser(a!, { userId: `ghost-${i}`, reason: 'other' }, day1);
+    }
+    await expectMetaError(store.reportUser(a!, { userId: 'one-too-many', reason: 'other' }, day1), 'REPORT_LIMIT');
+    // …but a duplicate still succeeds silently even at the cap.
+    await store.reportUser(a!, { userId: b!, reason: 'abuse' }, day1);
+
+    // A new UTC day resets both the dedupe and the cap.
+    const day2 = new Date('2026-07-11T00:01:00Z');
+    await store.reportUser(a!, { userId: b!, reason: 'abuse' }, day2);
+    const s = store as unknown as { reports: { reporterId: string; reportedId: string }[] };
+    expect(s.reports.filter((r) => r.reporterId === a! && r.reportedId === b!)).toHaveLength(2);
+  });
+
+  it('deleteUser removes blocks and reports in both directions', async () => {
+    const store = new MemoryStore();
+    const [a, b, c] = await newUsers(store, 3);
+    await store.blockUser(a!, b!);
+    await store.blockUser(c!, a!);
+    await store.reportUser(a!, { userId: b!, reason: 'abuse' });
+    await store.reportUser(b!, { userId: a!, reason: 'other' });
+
+    await store.deleteUser(a!);
+
+    expect(await store.listBlocks(a!)).toEqual([]);
+    expect(await store.listBlocks(c!)).toEqual([]);
+    expect(await store.hasBlockBetween(b!, [c!])).toBe(false);
+    const s = store as unknown as { reports: { reporterId: string; reportedId: string }[] };
+    expect(s.reports.some((r) => r.reporterId === a! || r.reportedId === a!)).toBe(false);
+  });
+});
+
 describe('MemoryStore leaderboards + profile + delete', () => {
   it('ranks all-time and weekly, computes my rank, deletes cleanly', async () => {
     const store = new MemoryStore();

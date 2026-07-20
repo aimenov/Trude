@@ -38,6 +38,30 @@ class TrudeApiException implements Exception {
   String toString() => 'TrudeApiException($statusCode): $body';
 }
 
+/// One row of `GET /me/blocks` — a player this user has blocked.
+class BlockEntry {
+  BlockEntry({required this.userId, required this.nickname, this.createdAt});
+
+  factory BlockEntry.fromJson(Map<String, dynamic> json) => BlockEntry(
+        userId: json['userId'] as String,
+        nickname: (json['nickname'] as String?) ?? '—',
+        // The server sends epoch ms (matching getAchievements); tolerate an
+        // ISO-8601 string too so the format can evolve without breaking us.
+        createdAt: switch (json['createdAt']) {
+          final num ms =>
+            DateTime.fromMillisecondsSinceEpoch(ms.toInt(), isUtc: true),
+          final String s => DateTime.tryParse(s),
+          _ => null,
+        },
+      );
+
+  final String userId;
+
+  /// Nickname at list time; `'—'` for since-deleted accounts.
+  final String nickname;
+  final DateTime? createdAt;
+}
+
 /// Thin facade over the Trude server: auth + room matchmaking.
 class TrudeClient {
   TrudeClient(String baseUrl, {http.Client? httpClient})
@@ -176,6 +200,47 @@ class TrudeClient {
   /// `POST /iap/apple {receipt}` (Bearer).
   Future<IapResult> postIapApple({required String receipt}) async =>
       IapResult.fromJson(await _postAuth('/iap/apple', {'receipt': receipt}));
+
+  // -- Moderation endpoints --------------------------------------------------
+
+  /// `GET /me/blocks` — everyone this user has blocked (Bearer).
+  Future<List<BlockEntry>> getBlocks() async {
+    final json = await _get('/me/blocks');
+    return [
+      for (final b in (json['blocks'] as List? ?? const []))
+        BlockEntry.fromJson((b as Map).cast<String, dynamic>()),
+    ];
+  }
+
+  /// `POST /me/blocks {userId}` (Bearer). Idempotent — blocking an already
+  /// blocked player succeeds. Failures: 400 CANNOT_BLOCK_SELF.
+  Future<void> blockUser(String userId) async {
+    await _postAuth('/me/blocks', {'userId': userId});
+  }
+
+  /// `DELETE /me/blocks/:userId` (Bearer) — idempotent, 204 on success.
+  Future<void> unblockUser(String userId) async {
+    final res = await _delete('/me/blocks/${Uri.encodeComponent(userId)}');
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw TrudeApiException(res.statusCode, res.body);
+    }
+  }
+
+  /// `POST /reports {userId, reason, roomId?}` (Bearer). [reason] is one of
+  /// the wire enum strings `'nickname' | 'cheating' | 'abuse' | 'other'`.
+  /// Same-day duplicate reports succeed idempotently; 429 REPORT_LIMIT past
+  /// the daily cap.
+  Future<void> reportPlayer({
+    required String userId,
+    required String reason,
+    String? roomId,
+  }) async {
+    await _postAuth('/reports', {
+      'userId': userId,
+      'reason': reason,
+      'roomId': ?roomId,
+    });
+  }
 
   /// `DELETE /me` — deletes the account and all its rows; 204 on success.
   Future<void> deleteMe() async {

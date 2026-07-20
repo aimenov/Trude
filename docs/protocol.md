@@ -71,7 +71,7 @@ Broadcast as `events { actionCount: number, events: Event[] }` — ordered; clie
 | `seatSwapResolved` | `{ seatA, seatB, accepted: boolean }` | |
 | `playerJoined` / `playerLeft` | `{ userId, nickname, avatar, seat }` / `{ userId, seat }` | lobby |
 | `roomConfigured` | `{ deckSize, turnTimerSec, maxPlayers }` | |
-| `gameOver` | `{ loserSeat, loserUserId, jokerCard: Card, placements: [{ userId, seat, placement }], stats: { [userId]: { liesSurvived, liesCaught, checksWon, checksLost, cardsPickedUp, quadsDiscarded, jokerPassed, maxHandSize, truthfulThrows, lyingThrows, firstOut, wasEverCaught, jokerSmuggles } } }` | stats is a map keyed by userId; results screen; room returns to lobby phase afterwards, seats kept |
+| `gameOver` | `{ loserSeat, loserUserId, jokerCard: Card, placements: [{ userId, seat, placement, left?: true }], stats: { [userId]: { liesSurvived, liesCaught, checksWon, checksLost, cardsPickedUp, quadsDiscarded, jokerPassed, maxHandSize, truthfulThrows, lyingThrows, firstOut, wasEverCaught, jokerSmuggles } } }` | stats is a map keyed by userId; results screen; room returns to lobby phase afterwards, seats kept. `left: true` (absent otherwise) marks a consented mid-game leaver: placements are re-ranked so leavers occupy the bottom places (earlier leave = worse; the engine loser ranks above all leavers unless themself a leaver); stayers compact to 1..k |
 | `achievementUnlocked` | (one client) `{ key, title, description }` | toast deferred by AnimationQueue |
 | `rewards` | (one client) `RewardsMessage` — see below | post-game economy summary, right after `gameOver`; sent ONLY to seats that joined with `supportsRewards: true` (old clients never see it) |
 | `reaction` | `{ seat, emoji }` | burst overlay |
@@ -94,7 +94,7 @@ Broadcast as `events { actionCount: number, events: Event[] }` — ordered; clie
 
 Join options gained `supportsRewards?: boolean` — clients that understand the `rewards` message pass `true` at join/create.
 
-Economy rules baked into the server (see `packages/server/src/economy/`): placement coins 3p 25/12/5 … 8p 50/36/26/18/13/9/6/5 (winner `25+5×(N−3)`, floor 5); games with `actionCount < 20` award nothing; private rooms: coins ×0.5, never rated, no quest progress; per-user daily cap on game coins 750; every coin mutation is a `CoinLedger` row with a unique idempotency key.
+Economy rules baked into the server (see `packages/server/src/economy/`): placement coins 3p 25/12/5 … 8p 50/36/26/18/13/9/6/5 (winner `25+5×(N−3)`, floor 5); games with `actionCount < 20` award nothing; private rooms: coins ×0.5, never rated, no quest progress; consented mid-game leavers: 0 coins and no quest progress, rating applies at the adjusted last placement (see Room lifecycle notes); per-user daily cap on game coins 750; every coin mutation is a `CoinLedger` row with a unique idempotency key.
 
 ## HTTP API (Express, same origin)
 
@@ -119,6 +119,10 @@ All error responses are `{ error: CODE }`. Authed routes return `401 UNAUTHORIZE
 | `POST /ads/reward` | (Bearer) `{ token }` → 200 `{ coins, balance, remainingToday }` \| `401 BAD_TOKEN` \| `409 TOKEN_USED` \| `429 DAILY_CAP`. `shop`: +25 coins, 5/day. `double`: grants that game's GAME_AWARD amount once per game (`double:{gameId}:{userId}`), 10/day. |
 | `POST /iap/google` | (Bearer) `{ purchaseToken, productId }` → 200 `{ productId, granted: { coins, premium }, balance, premium, alreadyProcessed }` \| `400 INVALID_RECEIPT` \| `404 UNKNOWN_PRODUCT` \| `409 RECEIPT_OWNED_BY_OTHER_USER`. Replay of a processed order → 200 with `alreadyProcessed: true`, zero grant. Dev validator accepts `fake:{orderId}:{productId}`. |
 | `POST /iap/apple` | (Bearer) `{ receipt }` → same contract as `/iap/google` |
+| `GET /me/blocks` | (Bearer) → `{ blocks: [{ userId, nickname, createdAt }] }` — users I blocked, newest first (`createdAt` epoch ms; `nickname` is `"—"` for deleted accounts). |
+| `POST /me/blocks` | (Bearer) `{ userId }` → 200 `{ blocked: true }` \| `400 CANNOT_BLOCK_SELF`. Blocking an already-blocked user is an idempotent 200. |
+| `DELETE /me/blocks/:userId` | (Bearer) → `204`. Idempotent (unblocking a non-block also 204s). |
+| `POST /reports` | (Bearer) `{ userId, reason: "nickname"\|"cheating"\|"abuse"\|"other", roomId? }` → 200 `{ received: true }` \| `429 REPORT_LIMIT`. Same reporter→reported pair on the same UTC day = idempotent 200 (no new row); more than 20 NEW reports per reporter per UTC day → `REPORT_LIMIT`. |
 | `GET /rooms/by-code/:code` | → `{ roomId }` or 404 |
 | `GET /health` | → `{ ok: true }` |
 
@@ -130,3 +134,5 @@ IAP products: `coins_small` 500, `coins_medium` 1800, `coins_large` 4800, `coins
 - Private rooms: 6-char code, alphabet `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (no 0/O/1/I/L).
 - Mid-game join rejected; reconnection keyed by `userId` with `allowReconnection(client, 120)`.
 - Disconnect policy: autopilot forever, cards never redistributed; room disposes (game `ABANDONED`) only when ALL players are gone > 5 min.
+- **Leaver penalty**: a CONSENTED mid-game leave by a player who has not yet gone out marks the seat as a leaver. The game continues on autopilot to its normal joker end, but at `gameOver` the leaver is re-ranked below everyone who stayed (multiple leavers: earlier leave = worse place; a leaver-loser stays at the bottom) and the wire placement carries `left: true`. Awards: 0 coins (no ledger row, so no "double" ad either), no quest progress; the game is still rated for everyone and the leaver's rating takes the adjusted last placement. Lifetime stats still fold. A player who went out safe and then leaves keeps their earned placement; non-consented drops (network) are never penalized.
+- **Block enforcement** is join-time: `onJoin` rejects when ANY seated player has a block with the joiner (either direction). The rejection reaches the client as a transport-level ERROR frame during the WebSocket join — code `4216` (Colyseus `APPLICATION_ERROR`), message `"BLOCKED"` (colyseus.js: rejected join promise with `.code === 4216`, `.message === 'BLOCKED'`; Flutter `colyseus_lite`: `RoomProtocolError(4216, 'BLOCKED')` thrown from `RoomConnection.connect`). Nickname masking of blocked players is client-side in v1 (shared broadcasts are not per-recipient).

@@ -184,5 +184,23 @@
   "deleteAccountSecondTitle": "Пути назад нет",
   "deleteAccountSecondBody": "Отменить это будет нельзя. Удалить аккаунт?",
   "deleteAccountConfirm": "Удалить",
-  "deleteAccountFailed": "Не удалось удалить аккаунт: {reason}"
+  "deleteAccountFailed": "Не удалось удалить аккаунт: {reason}",
+
+  "reportPlayer": "Пожаловаться",
+  "reportReasonNickname": "Оскорбительный ник",
+  "reportReasonCheating": "Нечестная игра",
+  "reportReasonAbuse": "Оскорбительное поведение",
+  "reportReasonOther": "Другое",
+  "reportSent": "Жалоба отправлена",
+  "blockPlayer": "Заблокировать",
+  "unblockPlayer": "Разблокировать",
+  "playerBlocked": "Игрок заблокирован",
+  "blockedPlayerName": "Игрок",
+  "blockedPlayersTitle": "Заблокированные игроки",
+  "blockedEmpty": "Никого — и славно",
+  "joinBlocked": "Нельзя присоединиться к этой комнате",
+  "leftGameBadge": "Покинул игру",
+  "supportLabel": "Поддержка",
+  "emailCopied": "Адрес скопирован",
+  "kickPlayer": "Выгнать"
 }

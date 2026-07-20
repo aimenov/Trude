@@ -273,6 +273,27 @@ abstract final class Strings {
   static String deleteAccountFailed(String reason) =>
       _l.deleteAccountFailed(reason);
 
+  // Moderation: report / block / kick
+  static String get reportPlayer => _l.reportPlayer;
+  static String get reportReasonNickname => _l.reportReasonNickname;
+  static String get reportReasonCheating => _l.reportReasonCheating;
+  static String get reportReasonAbuse => _l.reportReasonAbuse;
+  static String get reportReasonOther => _l.reportReasonOther;
+  static String get reportSent => _l.reportSent;
+  static String get blockPlayer => _l.blockPlayer;
+  static String get unblockPlayer => _l.unblockPlayer;
+  static String get playerBlocked => _l.playerBlocked;
+
+  /// The masked stand-in for a blocked player's nickname («Игрок»).
+  static String get blockedPlayerName => _l.blockedPlayerName;
+  static String get blockedPlayersTitle => _l.blockedPlayersTitle;
+  static String get blockedEmpty => _l.blockedEmpty;
+  static String get joinBlocked => _l.joinBlocked;
+  static String get leftGameBadge => _l.leftGameBadge;
+  static String get supportLabel => _l.supportLabel;
+  static String get emailCopied => _l.emailCopied;
+  static String get kickPlayer => _l.kickPlayer;
+
   // Errors
   static String serverError(String code, String message) =>
       message.isEmpty ? code : '$code: $message';

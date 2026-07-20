@@ -226,5 +226,23 @@
   "deleteAccountSecondBody": "This cannot be undone. Delete the account?",
   "deleteAccountConfirm": "Delete",
   "deleteAccountFailed": "Couldn't delete the account: {reason}",
-  "@deleteAccountFailed": { "placeholders": { "reason": { "type": "String" } } }
+  "@deleteAccountFailed": { "placeholders": { "reason": { "type": "String" } } },
+
+  "reportPlayer": "Report",
+  "reportReasonNickname": "Offensive nickname",
+  "reportReasonCheating": "Cheating",
+  "reportReasonAbuse": "Abusive behavior",
+  "reportReasonOther": "Other",
+  "reportSent": "Report sent",
+  "blockPlayer": "Block",
+  "unblockPlayer": "Unblock",
+  "playerBlocked": "Player blocked",
+  "blockedPlayerName": "Player",
+  "blockedPlayersTitle": "Blocked players",
+  "blockedEmpty": "No one here — and just as well",
+  "joinBlocked": "You can't join this room",
+  "leftGameBadge": "Left the game",
+  "supportLabel": "Support",
+  "emailCopied": "Address copied",
+  "kickPlayer": "Kick"
 }

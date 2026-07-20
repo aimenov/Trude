@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Client as SdkClient, Room as SdkRoom } from 'colyseus.js';
 import { matchMaker } from 'colyseus';
 import type { Server } from 'colyseus';
+import { config } from '../src/config.js';
 import { createApp } from '../src/index.js';
 
 const PORT = 25990 + Math.floor(Math.random() * 100);
@@ -81,16 +82,24 @@ interface Bot {
   errors: string[];
   trace: string[];
   lastThrowCount: number;
+  /** True once this bot's own seat went out (safe). */
+  out: boolean;
+  /** Consented-leave the room once actionCount reaches this (unless already out). */
+  leaveAtAction: number | null;
+  leftGame: boolean;
 }
 
-function attachBot(room: SdkRoom, nickname: string, userId: string, token: string): Bot {
+function attachBot(
+  room: SdkRoom, nickname: string, userId: string, token: string,
+  leaveAtAction: number | null = null,
+): Bot {
   let resolveOver!: (e: Record<string, unknown>) => void;
   let resolveRewards!: (e: Record<string, unknown>) => void;
   const bot: Bot = {
     nickname, userId, token, room, seat: -1, hand: [], actionCount: -1, clientSeq: 0,
     retired: [], gameOver: new Promise((r) => { resolveOver = r; }),
     rewards: new Promise((r) => { resolveRewards = r; }), leaks: [], errors: [], trace: [],
-    lastThrowCount: 1,
+    lastThrowCount: 1, out: false, leaveAtAction, leftGame: false,
   };
 
   room.onError((code, message) => bot.errors.push(`transport error ${code}: ${message ?? ''}`));
@@ -126,6 +135,9 @@ function attachBot(room: SdkRoom, nickname: string, userId: string, token: strin
         case 'fourDiscarded':
           bot.retired.push(e['rank'] as string);
           break;
+        case 'playerOut':
+          if (e['seat'] === bot.seat) bot.out = true;
+          break;
         case 'cardsThrown':
           bot.lastThrowCount = e['count'] as number;
           break;
@@ -141,6 +153,13 @@ function attachBot(room: SdkRoom, nickname: string, userId: string, token: strin
           resolveOver(e);
           break;
       }
+    }
+    // Scripted mid-game leaver: quits consented before ever going out.
+    if (bot.leaveAtAction !== null && !bot.leftGame && !bot.out
+      && bot.actionCount >= bot.leaveAtAction) {
+      bot.leftGame = true;
+      void bot.room.leave(); // consented
+      return;
     }
     if (myTurn) act(bot, myTurn);
   });
@@ -288,5 +307,143 @@ describe('full game over real websockets', () => {
   it('rejects joins without a valid token', async () => {
     await expect(new SdkClient(WS).create('trude', { token: 'garbage' })).rejects.toThrow();
     await expect(new SdkClient(WS).create('trude', {})).rejects.toThrow();
+  });
+
+  it('a consented mid-game leaver ranks last with left:true and earns nothing', { timeout: 120_000 }, async () => {
+    // Speed knobs so autopilot turns for the departed seat resolve in ms, and a
+    // lower action floor so the stayers' awards never depend on game length.
+    const cfg = config as unknown as { disconnectedTurnMs: number; disconnectedGraceMs: number };
+    const eco = config.economy as unknown as { minActionsForAwards: number };
+    const anim = config.animationGrace as unknown as Record<string, number>;
+    const saved = {
+      turn: cfg.disconnectedTurnMs, grace: cfg.disconnectedGraceMs,
+      minActions: eco.minActionsForAwards, anim: { ...anim },
+    };
+    cfg.disconnectedTurnMs = 200;
+    cfg.disconnectedGraceMs = 200;
+    eco.minActionsForAwards = 10;
+    for (const k of Object.keys(anim)) anim[k] = 0;
+    try {
+      const users = await Promise.all([guestToken('Fedor'), guestToken('Galya'), guestToken('Hank')]);
+      const sdk = new SdkClient(WS);
+      const adminRoom = await sdk.create('trude', {
+        token: users[0]!.token, name: 'Leaver room', deckSize: 37, supportsRewards: true,
+      });
+      const bots: Bot[] = [attachBot(adminRoom, 'Fedor', users[0]!.userId, users[0]!.token)];
+      // Hank consented-leaves once the game passes action 8 — long before going out.
+      for (let i = 1; i < 3; i++) {
+        const room = await new SdkClient(WS).joinById(adminRoom.roomId, {
+          token: users[i]!.token, supportsRewards: true,
+        });
+        bots.push(attachBot(room, ['', 'Galya', 'Hank'][i]!, users[i]!.userId, users[i]!.token,
+          i === 2 ? 8 : null));
+      }
+      adminRoom.send('startGame', { actionCount: -1, clientSeq: ++bots[0]!.clientSeq });
+
+      const stayers = [bots[0]!, bots[1]!];
+      let stallTimer: NodeJS.Timeout;
+      const stallDump = new Promise<never>((_, reject) => {
+        stallTimer = setTimeout(() => {
+          const dump = bots.map((b) =>
+            `--- ${b.nickname} seat=${b.seat} left=${b.leftGame} actionCount=${b.actionCount}\n` +
+            `errors: ${b.errors.join('; ') || 'none'}\ntrace tail: ${b.trace.slice(-15).join(' | ')}`,
+          ).join('\n');
+          reject(new Error(`Leaver game stalled after 60s.\n${dump}`));
+        }, 60_000);
+      });
+      const results = await Promise.race([Promise.all(stayers.map((b) => b.gameOver)), stallDump]);
+      clearTimeout(stallTimer!);
+
+      expect(bots[2]!.leftGame).toBe(true);
+      const leaverId = users[2]!.userId;
+      for (const r of results) {
+        const placements = r['placements'] as { userId: string; placement: number; left?: boolean }[];
+        expect(placements).toHaveLength(3);
+        const leaver = placements.find((p) => p.userId === leaverId)!;
+        expect(leaver.placement).toBe(3); // re-ranked last regardless of autopilot play
+        expect(leaver.left).toBe(true);
+        for (const p of placements) {
+          if (p.userId !== leaverId) expect(p.left).toBeUndefined();
+        }
+      }
+      for (const bot of stayers) {
+        expect(bot.errors, `${bot.nickname} got errors: ${bot.errors.join('; ')}`).toEqual([]);
+      }
+
+      // The leaver earned nothing and took the last-place rating hit; stayers earned.
+      const me = async (token: string) => (await fetch(`${HTTP}/me`, {
+        headers: { authorization: `Bearer ${token}` },
+      })).json() as Promise<{ coins: number; rating: number }>;
+      const leaverMe = await me(users[2]!.token);
+      expect(leaverMe.coins).toBe(0);
+      expect(leaverMe.rating).toBeLessThan(1000);
+      for (const u of [users[0]!, users[1]!]) {
+        expect((await me(u.token)).coins).toBeGreaterThan(0);
+      }
+
+      // Rated for everyone: the leaderboard ranks all three.
+      const board = await (await fetch(`${HTTP}/leaderboard?scope=alltime`, {
+        headers: { authorization: `Bearer ${users[0]!.token}` },
+      })).json() as { entries: { userId: string }[] };
+      for (const u of users) {
+        expect(board.entries.some((e) => e.userId === u.userId), u.userId).toBe(true);
+      }
+
+      for (const bot of stayers) await bot.room.leave();
+    } finally {
+      cfg.disconnectedTurnMs = saved.turn;
+      cfg.disconnectedGraceMs = saved.grace;
+      eco.minActionsForAwards = saved.minActions;
+      Object.assign(anim, saved.anim);
+    }
+  });
+
+  it('a block rejects joins in both directions with the BLOCKED marker', async () => {
+    const ivan = await guestToken('Ivan');
+    const jana = await guestToken('Jana');
+
+    // Ivan blocks Jana over HTTP.
+    const blockRes = await fetch(`${HTTP}/me/blocks`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${ivan.token}` },
+      body: JSON.stringify({ userId: jana.userId }),
+    });
+    expect(blockRes.status).toBe(200);
+
+    const quiet = (room: SdkRoom) => {
+      room.onMessage('stateFull', () => undefined);
+      room.onMessage('events', () => undefined);
+      room.onMessage('hand', () => undefined);
+    };
+
+    // Jana cannot join Ivan's room. The rejection surfaces as a transport-level
+    // ERROR frame: code 4216 (Colyseus APPLICATION_ERROR), message 'BLOCKED'.
+    const ivanRoom = await new SdkClient(WS).create('trude', { token: ivan.token });
+    quiet(ivanRoom);
+    const err = await new SdkClient(WS)
+      .joinById(ivanRoom.roomId, { token: jana.token })
+      .then(() => null, (e: unknown) => e as { message?: string; code?: number });
+    expect(err).not.toBeNull();
+    expect(String(err!.message)).toContain('BLOCKED');
+    expect(err!.code).toBe(4216);
+
+    // Same block, other direction: the blocker cannot join the blocked's room.
+    const janaRoom = await new SdkClient(WS).create('trude', { token: jana.token });
+    quiet(janaRoom);
+    const err2 = await new SdkClient(WS)
+      .joinById(janaRoom.roomId, { token: ivan.token })
+      .then(() => null, (e: unknown) => e as { message?: string });
+    expect(String(err2!.message)).toContain('BLOCKED');
+
+    // Unblocking lifts the rejection.
+    const del = await fetch(`${HTTP}/me/blocks/${jana.userId}`, {
+      method: 'DELETE', headers: { authorization: `Bearer ${ivan.token}` },
+    });
+    expect(del.status).toBe(204);
+    const joined = await new SdkClient(WS).joinById(ivanRoom.roomId, { token: jana.token });
+    expect(joined.roomId).toBe(ivanRoom.roomId);
+    await joined.leave();
+    await ivanRoom.leave();
+    await janaRoom.leave();
   });
 });

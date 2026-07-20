@@ -136,6 +136,60 @@ void main() {
     expect(find.text('Удалить аккаунт?'), findsOneWidget);
   });
 
+  testWidgets('RU locale renders the moderation strings', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(builder: (context) {
+        Strings.use(AppLocalizations.of(context));
+        return SingleChildScrollView(
+            child: Column(children: [
+          Text(Strings.reportPlayer),
+          Text(Strings.reportReasonNickname),
+          Text(Strings.reportReasonCheating),
+          Text(Strings.reportReasonAbuse),
+          Text(Strings.reportReasonOther),
+          Text(Strings.reportSent),
+          Text(Strings.blockPlayer),
+          Text(Strings.unblockPlayer),
+          Text(Strings.playerBlocked),
+          Text(Strings.blockedPlayerName),
+          Text(Strings.blockedPlayersTitle),
+          Text(Strings.blockedEmpty),
+          Text(Strings.joinBlocked),
+          Text(Strings.leftGameBadge),
+          Text(Strings.supportLabel),
+          Text(Strings.emailCopied),
+          Text(Strings.kickPlayer),
+        ]));
+      }),
+    ));
+
+    // Report flow in the parlor voice.
+    expect(find.text('Пожаловаться'), findsOneWidget);
+    expect(find.text('Оскорбительный ник'), findsOneWidget);
+    expect(find.text('Нечестная игра'), findsOneWidget);
+    expect(find.text('Оскорбительное поведение'), findsOneWidget);
+    expect(find.text('Другое'), findsOneWidget);
+    expect(find.text('Жалоба отправлена'), findsOneWidget);
+
+    // Block / unblock and the masked stand-in name.
+    expect(find.text('Заблокировать'), findsOneWidget);
+    expect(find.text('Разблокировать'), findsOneWidget);
+    expect(find.text('Игрок заблокирован'), findsOneWidget);
+    expect(find.text('Игрок'), findsOneWidget);
+    expect(find.text('Заблокированные игроки'), findsOneWidget);
+    expect(find.text('Никого — и славно'), findsOneWidget);
+
+    // Join rejection + leaver badge + support row + lobby kick.
+    expect(find.text('Нельзя присоединиться к этой комнате'), findsOneWidget);
+    expect(find.text('Покинул игру'), findsOneWidget);
+    expect(find.text('Поддержка'), findsOneWidget);
+    expect(find.text('Адрес скопирован'), findsOneWidget);
+    expect(find.text('Выгнать'), findsOneWidget);
+  });
+
   testWidgets('EN locale keeps the original callouts', (tester) async {
     await tester.pumpWidget(MaterialApp(
       locale: const Locale('en'),

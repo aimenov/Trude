@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -13,6 +14,10 @@ import '../../core/theme/trude_theme.dart';
 import '../../core/version.dart';
 import '../home/parlor_widgets.dart';
 import '../shop/shop_widgets.dart';
+
+/// Support contact shown (and copied) from the About panel — Apple 1.2 UGC
+/// requires a reachable support address.
+const _supportEmail = 'asatechnoltd@gmail.com';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -237,18 +242,57 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const EtchedDivider(),
-                // About.
+                // Moderation: the block-management screen.
                 ParlorPanel(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: ListTile(
-                    leading: const Icon(Icons.info_outline,
+                    leading: const Icon(Icons.block,
                         color: TrudeColors.brassBright),
-                    title: Text(Strings.aboutLabel, style: _rowTitle),
-                    subtitle: Text(
-                      Strings.versionLabel(kAppVersion),
-                      style: const TextStyle(
-                          fontSize: 12.5, color: TrudeColors.textMuted),
-                    ),
+                    title:
+                        Text(Strings.blockedPlayersTitle, style: _rowTitle),
+                    trailing: const Icon(Icons.chevron_right,
+                        size: 20, color: TrudeColors.brass),
+                    onTap: () => context.go('/blocked'),
+                  ),
+                ),
+                const EtchedDivider(),
+                // About & support.
+                ParlorPanel(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.info_outline,
+                            color: TrudeColors.brassBright),
+                        title: Text(Strings.aboutLabel, style: _rowTitle),
+                        subtitle: Text(
+                          Strings.versionLabel(kAppVersion),
+                          style: const TextStyle(
+                              fontSize: 12.5, color: TrudeColors.textMuted),
+                        ),
+                      ),
+                      const Divider(height: 1, indent: 16, endIndent: 16),
+                      // Tap-to-copy support address (no url_launcher dep).
+                      ListTile(
+                        leading: const Icon(Icons.mail_outline,
+                            color: TrudeColors.brassBright),
+                        title: Text(Strings.supportLabel, style: _rowTitle),
+                        subtitle: const Text(
+                          _supportEmail,
+                          style: TextStyle(
+                              fontSize: 12.5, color: TrudeColors.textMuted),
+                        ),
+                        trailing: const Icon(Icons.copy_outlined,
+                            size: 18, color: TrudeColors.brass),
+                        onTap: () {
+                          Clipboard.setData(
+                              const ClipboardData(text: _supportEmail));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(Strings.emailCopied)));
+                        },
+                      ),
+                    ],
                   ),
                 ),
                 if (ref.watch(billingSupportedProvider)) ...[
